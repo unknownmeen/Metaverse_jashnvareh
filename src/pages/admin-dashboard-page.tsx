@@ -52,17 +52,40 @@ export function AdminDashboardPage() {
                     src={stream.coverUrl}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/admin/streams/${stream.id}/edit`);
-                    }}
-                    size="icon"
-                    variant="ghost"
-                    className="absolute left-3 top-3 h-9 w-9 rounded-xl bg-white/80 text-slate-600 backdrop-blur-sm hover:bg-white hover:text-primary-600"
-                  >
-                    <SquarePen className="h-4 w-4" />
-                  </Button>
+                  <div className="absolute left-3 top-3 flex flex-col gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <div className="group/btn relative inline-flex">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/admin/streams/${stream.id}/edit`);
+                        }}
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 flex-shrink-0 rounded-xl bg-white/80 text-slate-600 backdrop-blur-sm hover:bg-white hover:text-primary-600"
+                      >
+                        <SquarePen className="h-4 w-4" />
+                      </Button>
+                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-800 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/btn:opacity-100">
+                        ویرایش
+                      </span>
+                    </div>
+                    <div className="group/btn relative inline-flex">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(stream.id);
+                        }}
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 flex-shrink-0 rounded-xl bg-white/80 text-slate-600 backdrop-blur-sm hover:bg-white hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-800 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/btn:opacity-100">
+                        حذف
+                      </span>
+                    </div>
+                  </div>
                   <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 transition-all duration-300 group-hover:opacity-100">
                     <span className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
                       <Images className="h-3.5 w-3.5" />
@@ -79,14 +102,7 @@ export function AdminDashboardPage() {
                     {stream.conceptDescription || `تعداد تصاویر تولید شده: ${formatNumberFa(count)}`}
                   </p>
 
-                  <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                    <Button onClick={() => setDeleteTarget(stream.id)} size="sm" variant="danger">
-                      <Trash2 className="ml-1 h-4 w-4" />
-                      حذف جریان
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center gap-1 text-sm font-semibold text-primary-500 transition-colors group-hover:text-primary-600">
+                  <div className="flex items-center gap-1 border-t border-slate-100 pt-3 text-sm font-semibold text-primary-500 transition-colors group-hover:text-primary-600">
                     <button
                       type="button"
                       onClick={() => navigate(`/streams/${stream.id}`)}

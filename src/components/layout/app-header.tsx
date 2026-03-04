@@ -45,7 +45,7 @@ function PillNavbar({ userAvatar, userName }: { userAvatar?: string; userName?: 
   const CurrentIcon = currentItem?.icon ?? Home;
 
   return (
-    <div ref={ref} className="relative z-50">
+    <div ref={ref} className="relative z-50 flex items-center gap-2">
       <button
         onClick={() => setOpen(!open)}
         className={cn(
@@ -64,6 +64,12 @@ function PillNavbar({ userAvatar, userName }: { userAvatar?: string; userName?: 
           <CurrentIcon className="h-5 w-5" />
         )}
       </button>
+      <Link
+        to="/home"
+        className="flex-shrink-0 rounded-xl bg-primary-100 px-4 py-2 text-base font-bold text-primary-700 transition-colors hover:bg-primary-200 hover:text-primary-800"
+      >
+        جشنواره
+      </Link>
 
       {open && (
         <div className="absolute top-14 right-0 flex flex-col items-center gap-1 rounded-[1.75rem] border border-slate-200 bg-slate-100 p-2 shadow-lg animate-scale-in">
