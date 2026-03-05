@@ -1,0 +1,160 @@
+// ─────────────────────────────────────────────────────────────
+// Building (Festivals) — Prisma Schema
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  JUDGE
+  USER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum FestivalStatus {
+  UNOPENED
+  OPEN
+  CLOSED
+}
+
+enum ConceptMediaType {
+  IMAGE
+  VIDEO
+}
+
+enum NotificationType {
+  COMMENT
+  RATING
+  SYSTEM
+  TOP_IMAGE
+}
+
+// ── Models ───────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  phone        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  gender       Gender
+  realName     String?
+  displayName  String?
+  avatarUrl    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images                Image[]
+  comments              Comment[]
+  ratings               Rating[]
+  notifications         Notification[] @relation("ReceiverNotifications")
+  sentNotifications     Notification[] @relation("SenderNotifications")
+
+  @@map("users")
+}
+
+model Festival {
+  id               String           @id @default(uuid())
+  name             String
+  coverImageUrl    String?
+  conceptMediaType ConceptMediaType @default(IMAGE)
+  conceptMediaUrl  String?
+  conceptText      String?
+  rulesText        String?
+  status           FestivalStatus   @default(UNOPENED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images Image[]
+
+  @@map("festivals")
+}
+
+model Image {
+  id         String  @id @default(uuid())
+  url        String
+  title      String?
+  isTopImage Boolean @default(false)
+  tags       String[] @default([])
+
+  festivalId String
+  festival   Festival @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments Comment[]
+  ratings  Rating[]
+
+  @@map("images")
+}
+
+model Comment {
+  id            String  @id @default(uuid())
+  text          String
+  isAdminReview Boolean @default(false)
+
+  imageId String
+  image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
+model Rating {
+  id    String @id @default(uuid())
+  score Int
+
+  imageId String
+  image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([imageId, userId])
+  @@map("ratings")
+}
+
+model Notification {
+  id     String           @id @default(uuid())
+  type   NotificationType
+  text   String
+  isRead Boolean          @default(false)
+
+  userId   String
+  user     User   @relation("ReceiverNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  senderId String?
+  sender   User?  @relation("SenderNotifications", fields: [senderId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}

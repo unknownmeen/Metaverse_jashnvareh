@@ -1,0 +1,218 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AddCommentInput {
+  imageId: ID!
+  text: String!
+}
+
+type AuthPayload {
+  accessToken: String!
+  user: User!
+}
+
+type AverageRating {
+  average: Float!
+  count: Int!
+}
+
+input ChangeRoleInput {
+  role: String!
+  userId: String!
+}
+
+type Comment {
+  author: User!
+  createdAt: DateTime!
+  id: ID!
+  imageId: String!
+  isAdminReview: Boolean!
+  text: String!
+  userId: String!
+}
+
+enum ConceptMediaType {
+  IMAGE
+  VIDEO
+}
+
+input CreateFestivalInput {
+  conceptMediaType: String = "IMAGE"
+  conceptMediaUrl: String
+  conceptText: String
+  coverImageUrl: String
+  name: String!
+  rulesText: String
+}
+
+input CreateUserInput {
+  displayName: String
+  gender: String
+  password: String!
+  phone: String!
+  realName: String
+  role: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Festival {
+  conceptMediaType: ConceptMediaType!
+  conceptMediaUrl: String
+  conceptText: String
+  coverImageUrl: String
+  createdAt: DateTime!
+  id: ID!
+  imageCount: Float!
+  name: String!
+  rulesText: String
+  status: FestivalStatus!
+  updatedAt: DateTime!
+}
+
+enum FestivalStatus {
+  CLOSED
+  OPEN
+  UNOPENED
+}
+
+enum Gender {
+  FEMALE
+  MALE
+}
+
+type Image {
+  author: User!
+  averageRating: Float
+  commentCount: Int!
+  createdAt: DateTime!
+  festival: Festival
+  festivalId: String!
+  id: ID!
+  isTopImage: Boolean!
+  tags: [String!]!
+  title: String
+  url: String!
+  userId: String!
+}
+
+input LoginInput {
+  password: String!
+  phone: String!
+}
+
+type Mutation {
+  addAdminReview(input: AddCommentInput!): Comment!
+  addComment(input: AddCommentInput!): Comment!
+  changeRoles(changes: [ChangeRoleInput!]!): [User!]!
+  createFestival(input: CreateFestivalInput!): Festival!
+  createUsers(inputs: [CreateUserInput!]!): [User!]!
+  deleteUsers(ids: [String!]!): Boolean!
+  login(input: LoginInput!): AuthPayload!
+
+  """Returns count of updated notifications"""
+  markAllNotificationsAsRead: Int!
+  markNotificationAsRead(id: ID!): Notification!
+  rateImage(input: RateImageInput!): Rating!
+  toggleTopImage(imageId: ID!): Image!
+  updateFestivalStatus(input: UpdateFestivalStatusInput!): Festival!
+  updateProfile(input: UpdateProfileInput!): User!
+  updateUsers(updates: [UpdateUserByIdInput!]!): [User!]!
+  uploadImage(input: UploadImageInput!): Image!
+}
+
+type Notification {
+  createdAt: DateTime!
+  id: ID!
+  isRead: Boolean!
+  senderId: String
+  text: String!
+  type: NotificationType!
+  userId: String!
+}
+
+enum NotificationType {
+  COMMENT
+  RATING
+  SYSTEM
+  TOP_IMAGE
+}
+
+type Query {
+  allUsers: [User!]!
+  festival(id: ID!): Festival!
+  festivalImages(festivalId: ID!): [Image!]!
+  festivals: [Festival!]!
+  image(id: ID!): Image!
+  imageAverageRating(imageId: ID!): AverageRating!
+  imageComments(imageId: ID!): [Comment!]!
+  me: User!
+  myImages: [Image!]!
+  myNotifications: [Notification!]!
+}
+
+input RateImageInput {
+  imageId: ID!
+  score: Int!
+}
+
+type Rating {
+  createdAt: DateTime!
+  id: ID!
+  imageId: String!
+  score: Int!
+  userId: String!
+}
+
+enum Role {
+  ADMIN
+  JUDGE
+  SUPER_ADMIN
+  USER
+}
+
+input UpdateFestivalStatusInput {
+  festivalId: ID!
+  newStatus: FestivalStatus!
+}
+
+input UpdateProfileInput {
+  avatarUrl: String
+  displayName: String
+  newPassword: String
+  realName: String
+}
+
+input UpdateUserByIdInput {
+  input: UpdateUserInput!
+  userId: String!
+}
+
+input UpdateUserInput {
+  displayName: String
+  phone: String
+  realName: String
+}
+
+input UploadImageInput {
+  festivalId: ID!
+  tags: [String!] = []
+  title: String
+  url: String!
+}
+
+type User {
+  avatarUrl: String
+  createdAt: DateTime!
+  displayName: String
+  gender: Gender!
+  id: ID!
+  phone: String!
+  realName: String
+  role: Role!
+  visibleName: String!
+}
