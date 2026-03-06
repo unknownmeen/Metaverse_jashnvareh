@@ -1,5 +1,8 @@
 {
   "nav": {
+    "breadcrumb_stream": "جریان",
+    "breadcrumb_edit_stream": "ویرایش جریان",
+    "breadcrumb_image": "جزئیات تصویر",
     "home": "خانه",
     "streams": "جریان ها",
     "admin_view": "نمای ادمین",

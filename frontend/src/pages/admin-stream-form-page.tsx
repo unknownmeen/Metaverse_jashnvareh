@@ -167,6 +167,7 @@ export function AdminStreamFormPage() {
       </h1>
 
       <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+        {/* بخش ۱: نام جشنواره + تصویر کاور */}
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
           <div className="space-y-4">
             <div>
@@ -189,16 +190,10 @@ export function AdminStreamFormPage() {
               onChange={(v) => setForm((prev) => ({ ...prev, coverImageUrl: v }))}
               placeholder={t("admin_form.cover_placeholder")}
             />
-
-            <UploadCard
-              label={t("admin_form.concept_media")}
-              value={form.conceptMediaUrl}
-              onChange={(v) => setForm((prev) => ({ ...prev, conceptMediaUrl: v }))}
-              placeholder={t("admin_form.upload_placeholder")}
-            />
           </div>
         </div>
 
+        {/* بخش ۲: توضیح مفهوم + تصویر یا ویدیو مفهوم */}
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
           <div className="space-y-4">
             <div>
@@ -215,6 +210,18 @@ export function AdminStreamFormPage() {
               />
             </div>
 
+            <UploadCard
+              label={t("admin_form.concept_media")}
+              value={form.conceptMediaUrl}
+              onChange={(v) => setForm((prev) => ({ ...prev, conceptMediaUrl: v }))}
+              placeholder={t("admin_form.upload_placeholder")}
+            />
+          </div>
+        </div>
+
+        {/* بخش ۳: قواعد فرم */}
+        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <div className="space-y-4">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-400" htmlFor="rulesText">
                 {t("admin_form.rules")}

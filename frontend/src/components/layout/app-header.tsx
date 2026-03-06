@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, CheckCheck, HelpCircle, Home, Layers, ShieldCheck, UserCircle } from "lucide-react";
+import { Bell, CheckCheck, ChevronLeft, HelpCircle, Home, Layers, ShieldCheck, UserCircle } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 
@@ -17,6 +17,31 @@ import {
 import { playNotificationSound } from "@/services/notification-sound";
 
 const NOTIFICATIONS_POLL_MS = 4000;
+
+interface BreadcrumbItem {
+  path: string;
+  label: string;
+}
+
+function buildBreadcrumb(pathname: string): BreadcrumbItem[] {
+  if (pathname === "/home") return [{ path: "/home", label: t("nav.home") }];
+  if (pathname === "/profile") return [{ path: "/profile", label: t("nav.profile") }];
+  if (pathname === "/help") return [{ path: "/help", label: t("nav.help") }];
+  if (pathname === "/streams") return [{ path: "/streams", label: t("nav.streams") }];
+  if (pathname.startsWith("/streams/") && pathname !== "/streams") {
+    return [{ path: "/streams", label: t("nav.streams") }, { path: pathname, label: t("nav.breadcrumb_stream") }];
+  }
+  if (pathname === "/admin") return [{ path: "/admin", label: t("nav.admin_view") }];
+  if (pathname === "/admin/streams/new") {
+    return [{ path: "/admin", label: t("nav.admin_view") }, { path: "/admin/streams/new", label: t("admin.create_stream") }];
+  }
+  if (pathname.match(/^\/admin\/streams\/[^/]+\/edit$/)) {
+    return [{ path: "/admin", label: t("nav.admin_view") }, { path: pathname, label: t("nav.breadcrumb_edit_stream") }];
+  }
+  if (pathname === "/super-admin/users") return [{ path: "/super-admin/users", label: t("nav.user_management") }];
+  if (pathname.startsWith("/images/")) return [{ path: pathname, label: t("nav.breadcrumb_image") }];
+  return [];
+}
 
 interface NavItem {
   path: string;
@@ -81,12 +106,6 @@ function PillNavbar({ userAvatar, userName }: { userAvatar?: string; userName?: 
           <CurrentIcon className="h-5 w-5" />
         )}
       </button>
-      <Link
-        to="/home"
-        className="flex-shrink-0 rounded-xl bg-primary-100 px-4 py-2 text-base font-bold text-primary-700 transition-colors hover:bg-primary-200 hover:text-primary-800"
-      >
-        {t("nav.festival")}
-      </Link>
 
       {open && (
         <div className="absolute top-14 right-0 flex flex-col items-center gap-1 rounded-[1.75rem] border border-slate-200 bg-slate-100 p-2 shadow-lg animate-scale-in">
@@ -226,8 +245,12 @@ function NotificationPanel({ open, onClose }: { open: boolean; onClose: () => vo
 
 export function AppHeader() {
   const { currentUser } = useAppStore();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [showNotif, setShowNotif] = useState(false);
   const previousUnreadRef = useRef<number | null>(null);
+
+  const breadcrumb = buildBreadcrumb(location.pathname);
 
   const { data, refetch } = useQuery<{ myNotifications: NotificationItem[] }>(GET_MY_NOTIFICATIONS_QUERY, {
     pollInterval: NOTIFICATIONS_POLL_MS,
@@ -266,6 +289,28 @@ export function AppHeader() {
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <PillNavbar userAvatar={currentUser.avatarUrl ?? undefined} userName={currentUser.realName} />
+
+          {breadcrumb.length > 0 && (
+            <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+              {breadcrumb.map((item, index) => (
+                <div key={item.path + index} className="flex flex-shrink-0 items-center gap-1">
+                  {index > 0 && <ChevronLeft className="h-4 w-4 text-slate-300" />}
+                  <button
+                    type="button"
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "rounded-lg px-2 py-1 text-right text-sm whitespace-nowrap transition-colors",
+                      index === breadcrumb.length - 1
+                        ? "bg-primary-50 font-bold text-primary-600"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-primary-600",
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1">

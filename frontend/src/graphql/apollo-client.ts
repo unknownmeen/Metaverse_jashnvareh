@@ -1,8 +1,13 @@
 import { ApolloClient, InMemoryCache, createHttpLink, from } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
 
+// در dev مستقیم به بک‌اند وصل می‌شویم تا از مشکل پروکسی Vite جلوگیری شود
+const graphqlUri =
+  import.meta.env.VITE_GRAPHQL_URL ||
+  (import.meta.env.DEV ? "http://localhost:2345/graphql" : "/graphql");
+
 const httpLink = createHttpLink({
-  uri: "/graphql",
+  uri: graphqlUri,
 });
 
 const authLink = setContext((_, { headers }) => {
