@@ -7,6 +7,8 @@ import { Alert } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatPhoneFa, toEnglishDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { resolveMediaUrl } from "@/lib/upload";
+import { uploadFile } from "@/lib/upload";
 import { UPDATE_PROFILE_MUTATION } from "@/graphql/operations";
 
 export function ProfilePage() {
@@ -30,17 +32,19 @@ export function ProfilePage() {
     return null;
   }
 
-  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file || !file.type.startsWith("image/")) return;
     setUploadingAvatar(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSelectedAvatar(reader.result as string);
+    try {
+      const url = await uploadFile(file, "avatars");
+      setSelectedAvatar(url);
+    } catch {
+      setMessage(t("profile.upload_error"));
+    } finally {
       setUploadingAvatar(false);
-    };
-    reader.readAsDataURL(file);
-    event.target.value = "";
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -51,12 +55,18 @@ export function ProfilePage() {
       return;
     }
 
+    if (newPassword && !currentPassword) {
+      setMessage(t("profile.current_password_required"));
+      return;
+    }
+
     try {
       await updateProfile({
         variables: {
           input: {
             realName: realName.trim(),
-            displayName: currentUser.gender === "FEMALE" ? displayName.trim() || undefined : undefined,
+            displayName: currentUser.gender?.toUpperCase() === "FEMALE" ? displayName.trim() || undefined : undefined,
+            currentPassword: newPassword ? toEnglishDigits(currentPassword) : undefined,
             newPassword: newPassword ? toEnglishDigits(newPassword) : undefined,
             avatarUrl: selectedAvatar || undefined,
           },
@@ -68,8 +78,9 @@ export function ProfilePage() {
       setMessage("");
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      setMessage(t("profile.save_error"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("profile.save_error");
+      setMessage(msg);
     }
   };
 
@@ -83,7 +94,7 @@ export function ProfilePage() {
           <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex min-w-0 items-center gap-3">
               <Avatar className="h-16 w-16 flex-shrink-0">
-                <AvatarImage src={selectedAvatar || currentUser.avatarUrl || ""} alt={currentUser.realName} />
+                <AvatarImage src={resolveMediaUrl(selectedAvatar || currentUser.avatarUrl)} alt={currentUser.realName ?? undefined} />
                 <AvatarFallback className="bg-slate-200">
                   <User className="h-8 w-8 text-slate-500" />
                 </AvatarFallback>
@@ -136,7 +147,7 @@ export function ProfilePage() {
             />
           </div>
 
-          {currentUser.gender === "FEMALE" ? (
+          {currentUser.gender?.toUpperCase() === "FEMALE" ? (
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-400" htmlFor="displayName">
                 {t("profile.display_name")}
@@ -167,7 +178,7 @@ export function ProfilePage() {
             <label className="mb-1.5 block text-xs font-semibold text-slate-400">{t("profile.gender")}</label>
             <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-3">
               <span className="flex-1 text-sm font-medium text-slate-600">
-                {t(`gender.${currentUser.gender.toLowerCase()}`)}
+                {t(`gender.${currentUser.gender?.toLowerCase() ?? "male"}`)}
               </span>
               <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-400">
                 {t("profile.not_editable")}

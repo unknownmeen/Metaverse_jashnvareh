@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Gender, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from '../repositories/user.repository';
@@ -27,6 +27,15 @@ export class UserWriteService {
     }
 
     if (input.newPassword) {
+      const user = await this.userRepository.findById(userId);
+      if (!user) throw new NotFoundException('کاربر یافت نشد');
+      if (!input.currentPassword) {
+        throw new BadRequestException('برای تغییر رمز عبور، رمز فعلی را وارد کنید');
+      }
+      const valid = await bcrypt.compare(input.currentPassword, user.passwordHash);
+      if (!valid) {
+        throw new BadRequestException('رمز عبور فعلی صحیح نیست');
+      }
       updateData.passwordHash = await bcrypt.hash(input.newPassword, 10);
     }
 

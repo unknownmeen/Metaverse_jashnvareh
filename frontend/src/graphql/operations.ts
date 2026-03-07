@@ -185,6 +185,15 @@ export const CREATE_FESTIVAL_MUTATION = gql`
   ${FESTIVAL_FRAGMENT}
 `;
 
+export const UPDATE_FESTIVAL_MUTATION = gql`
+  mutation UpdateFestival($input: UpdateFestivalInput!) {
+    updateFestival(input: $input) {
+      ...FestivalFields
+    }
+  }
+  ${FESTIVAL_FRAGMENT}
+`;
+
 export const UPDATE_FESTIVAL_STATUS_MUTATION = gql`
   mutation UpdateFestivalStatus($input: UpdateFestivalStatusInput!) {
     updateFestivalStatus(input: $input) {
@@ -192,6 +201,12 @@ export const UPDATE_FESTIVAL_STATUS_MUTATION = gql`
     }
   }
   ${FESTIVAL_FRAGMENT}
+`;
+
+export const DELETE_FESTIVAL_MUTATION = gql`
+  mutation DeleteFestival($festivalId: ID!) {
+    deleteFestival(festivalId: $festivalId)
+  }
 `;
 
 // ─── Images ───────────────────────────────────────────────────

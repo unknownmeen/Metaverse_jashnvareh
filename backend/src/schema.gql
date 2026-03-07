@@ -111,6 +111,7 @@ type Mutation {
   changeRoles(changes: [ChangeRoleInput!]!): [User!]!
   createFestival(input: CreateFestivalInput!): Festival!
   createUsers(inputs: [CreateUserInput!]!): [User!]!
+  deleteFestival(festivalId: ID!): Boolean!
   deleteUsers(ids: [String!]!): Boolean!
   login(input: LoginInput!): AuthPayload!
 
@@ -119,6 +120,7 @@ type Mutation {
   markNotificationAsRead(id: ID!): Notification!
   rateImage(input: RateImageInput!): Rating!
   toggleTopImage(imageId: ID!): Image!
+  updateFestival(input: UpdateFestivalInput!): Festival!
   updateFestivalStatus(input: UpdateFestivalStatusInput!): Festival!
   updateProfile(input: UpdateProfileInput!): User!
   updateUsers(updates: [UpdateUserByIdInput!]!): [User!]!
@@ -175,6 +177,16 @@ enum Role {
   USER
 }
 
+input UpdateFestivalInput {
+  conceptMediaType: String = "IMAGE"
+  conceptMediaUrl: String
+  conceptText: String
+  coverImageUrl: String!
+  festivalId: String!
+  name: String!
+  rulesText: String
+}
+
 input UpdateFestivalStatusInput {
   festivalId: ID!
   newStatus: FestivalStatus!
@@ -182,6 +194,7 @@ input UpdateFestivalStatusInput {
 
 input UpdateProfileInput {
   avatarUrl: String
+  currentPassword: String
   displayName: String
   newPassword: String
   realName: String

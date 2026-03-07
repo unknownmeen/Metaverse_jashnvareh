@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { GET_FESTIVALS_QUERY } from "@/graphql/operations";
 import { formatNumberFa } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { resolveMediaUrl } from "@/lib/upload";
 import type { Festival } from "@/types/models";
 
 export function StreamsPage() {
@@ -41,7 +42,7 @@ export function StreamsPage() {
                   <img
                     alt={festival.name}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    src={festival.coverImageUrl ?? ""}
+                    src={resolveMediaUrl(festival.coverImageUrl)}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                   <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 transition-all duration-300 group-hover:opacity-100">

@@ -10,6 +10,7 @@ import { ImageCard } from "@/features/streams/image-card";
 import { CreateImageModal } from "@/features/streams/create-image-modal";
 import { StreamStatusBadge } from "@/features/streams/stream-status-badge";
 import { t } from "@/lib/i18n";
+import { resolveMediaUrl } from "@/lib/upload";
 import { GET_FESTIVAL_QUERY, GET_FESTIVAL_IMAGES_QUERY, UPLOAD_IMAGE_MUTATION } from "@/graphql/operations";
 import type { Festival, ImageItem } from "@/types/models";
 
@@ -111,7 +112,7 @@ export function StreamExplorePage() {
       <Card className="overflow-hidden border-white/70">
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="aspect-video overflow-hidden lg:aspect-auto lg:min-h-[260px]">
-            <img alt={festival.name} className="h-full w-full object-cover" src={festival.coverImageUrl ?? ""} />
+            <img alt={festival.name} className="h-full w-full object-cover" src={resolveMediaUrl(festival.coverImageUrl)} />
           </div>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-center justify-between gap-2">
@@ -121,19 +122,26 @@ export function StreamExplorePage() {
 
             <CardDescription>{festival.conceptText}</CardDescription>
 
-            {festival.conceptMediaUrl ? (
-              <div className="overflow-hidden rounded-2xl border border-border bg-primary-50">
-                {festival.conceptMediaType === "VIDEO" ? (
-                  <video className="w-full" controls src={festival.conceptMediaUrl} />
-                ) : (
-                  <img alt={t("stream_explore.concept_alt")} className="h-52 w-full object-cover" src={festival.conceptMediaUrl} />
-                )}
+            <div className="overflow-hidden rounded-2xl border border-border bg-primary-50">
+              <div className="border-b border-primary-100 px-3 py-1.5">
+                <span className="text-xs font-semibold text-primary-600">{t("stream_explore.concept_alt")}</span>
               </div>
-            ) : null}
+              {festival.conceptMediaUrl ? (
+                festival.conceptMediaType === "VIDEO" ? (
+                  <video className="w-full" controls src={resolveMediaUrl(festival.conceptMediaUrl)} />
+                ) : (
+                  <img alt={t("stream_explore.concept_alt")} className="h-52 w-full object-cover" src={resolveMediaUrl(festival.conceptMediaUrl)} />
+                )
+              ) : (
+                <div className="flex min-h-[120px] items-center justify-center p-4">
+                  <p className="text-sm text-slate-400">{t("stream_explore.concept_empty")}</p>
+                </div>
+              )}
+            </div>
 
             <div className="rounded-2xl bg-primary-50/80 p-3 text-sm leading-6 text-muted-foreground">
               <h3 className="mb-1 font-semibold text-slate-700">{t("stream_explore.rules_title")}</h3>
-              <p>{festival.rulesText}</p>
+              <p>{festival.rulesText?.trim() || t("stream_explore.rules_empty")}</p>
             </div>
 
             {festival.status === "OPEN" && currentUser.role === "JUDGE" ? (

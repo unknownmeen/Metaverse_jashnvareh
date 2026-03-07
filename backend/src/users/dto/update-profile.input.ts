@@ -21,6 +21,11 @@ export class UpdateProfileInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
+  currentPassword?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
   @MinLength(6)
   newPassword?: string;
 }

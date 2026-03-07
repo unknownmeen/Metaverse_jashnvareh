@@ -5,6 +5,7 @@ import { FestivalModel } from '../models/festival.model';
 import { FestivalReadService } from '../services/festival-read.service';
 import { FestivalWriteService } from '../services/festival-write.service';
 import { CreateFestivalInput } from '../dto/create-festival.input';
+import { UpdateFestivalInput } from '../dto/update-festival.input';
 import { UpdateFestivalStatusInput } from '../dto/update-festival-status.input';
 import { GqlAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles } from '../../common/decorators';
@@ -35,6 +36,13 @@ export class FestivalResolver {
     return this.festivalWriteService.create(input);
   }
 
+  @Mutation(() => FestivalModel)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async updateFestival(@Args('input') input: UpdateFestivalInput) {
+    return this.festivalWriteService.update(input);
+  }
+
   /**
    * Updates festival status through the State Machine.
    * Only ADMIN can invoke this. The state machine enforces
@@ -45,6 +53,13 @@ export class FestivalResolver {
   @Roles(Role.ADMIN)
   async updateFestivalStatus(@Args('input') input: UpdateFestivalStatusInput) {
     return this.festivalWriteService.updateStatus(input.festivalId, input.newStatus);
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async deleteFestival(@Args('festivalId', { type: () => ID }) festivalId: string) {
+    return this.festivalWriteService.delete(festivalId);
   }
 
   @ResolveField('imageCount', () => Number)

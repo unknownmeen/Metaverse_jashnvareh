@@ -1,32 +1,38 @@
 import { useState } from "react";
 import { ArrowLeft, Images, Loader2, Plus, SquarePen, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { createPortal } from "react-dom";
 
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { StreamStatusBadge } from "@/features/streams/stream-status-badge";
 import { formatNumberFa } from "@/lib/format";
 import { t } from "@/lib/i18n";
-import { GET_FESTIVALS_QUERY } from "@/graphql/operations";
+import { resolveMediaUrl } from "@/lib/upload";
+import { DELETE_FESTIVAL_MUTATION, GET_FESTIVALS_QUERY } from "@/graphql/operations";
 import type { Festival } from "@/types/models";
 
 export function AdminDashboardPage() {
   const navigate = useNavigate();
   const { data, loading } = useQuery<{ festivals: Festival[] }>(GET_FESTIVALS_QUERY);
+  const [deleteFestival, { loading: deleting }] = useMutation(DELETE_FESTIVAL_MUTATION, {
+    refetchQueries: [{ query: GET_FESTIVALS_QUERY }],
+  });
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const festivals = data?.festivals ?? [];
 
-  const handleDelete = () => {
-    // TODO: Implement delete festival mutation when backend supports it
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setDeleting(true);
-    setTimeout(() => {
-      setDeleting(false);
+    setDeleteError("");
+    try {
+      await deleteFestival({ variables: { festivalId: deleteTarget } });
       setDeleteTarget(null);
-    }, 500);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : t("admin.delete_error"));
+    }
   };
 
   if (loading) {
@@ -61,7 +67,7 @@ export function AdminDashboardPage() {
                 <img
                   alt={festival.name}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  src={festival.coverImageUrl ?? ""}
+                  src={resolveMediaUrl(festival.coverImageUrl)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <div className="absolute left-3 top-3 flex flex-col gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -137,7 +143,10 @@ export function AdminDashboardPage() {
             style={{ backgroundColor: "rgba(15, 23, 42, 0.5)", backdropFilter: "blur(4px)" }}
             dir="rtl"
             onMouseDown={(e) => {
-              if (!deleting && e.target === e.currentTarget) setDeleteTarget(null);
+              if (!deleting && e.target === e.currentTarget) {
+                setDeleteTarget(null);
+                setDeleteError("");
+              }
             }}
           >
             <div
@@ -149,6 +158,11 @@ export function AdminDashboardPage() {
                 <p className="mb-6 text-center text-sm leading-relaxed text-slate-600">
                   {t("admin.delete_confirm")}
                 </p>
+                {deleteError ? (
+                  <Alert variant="error" className="mb-4">
+                    {deleteError}
+                  </Alert>
+                ) : null}
                 <div className="flex flex-row-reverse gap-3">
                   <button
                     onClick={handleDelete}
@@ -159,7 +173,10 @@ export function AdminDashboardPage() {
                     {deleting ? t("admin.deleting") : t("admin.delete_action")}
                   </button>
                   <button
-                    onClick={() => setDeleteTarget(null)}
+                    onClick={() => {
+                      setDeleteTarget(null);
+                      setDeleteError("");
+                    }}
                     disabled={deleting}
                     className="flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-70"
                   >

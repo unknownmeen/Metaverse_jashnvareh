@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Upload } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -7,14 +7,16 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { GET_FESTIVAL_QUERY, GET_FESTIVALS_QUERY, CREATE_FESTIVAL_MUTATION, UPDATE_FESTIVAL_STATUS_MUTATION } from "@/graphql/operations";
+import { GET_FESTIVAL_QUERY, GET_FESTIVALS_QUERY, CREATE_FESTIVAL_MUTATION, UPDATE_FESTIVAL_MUTATION, UPDATE_FESTIVAL_STATUS_MUTATION } from "@/graphql/operations";
 import { t } from "@/lib/i18n";
+import { uploadFile } from "@/lib/upload";
 import type { Festival, FestivalStatus } from "@/types/models";
 
 interface FormState {
   name: string;
   coverImageUrl: string;
   conceptMediaUrl: string;
+  conceptMediaType: "IMAGE" | "VIDEO";
   conceptText: string;
   rulesText: string;
   status: FestivalStatus;
@@ -24,6 +26,7 @@ const defaultForm: FormState = {
   name: "",
   coverImageUrl: "",
   conceptMediaUrl: "",
+  conceptMediaType: "IMAGE",
   conceptText: "",
   rulesText: "",
   status: "OPEN",
@@ -34,22 +37,51 @@ function UploadCard({
   required,
   value,
   onChange,
+  onMediaTypeChange,
   placeholder,
+  acceptVideo,
+  uploadFolder,
 }: {
   label: string;
   required?: boolean;
   value: string;
   onChange: (v: string) => void;
+  onMediaTypeChange?: (t: "IMAGE" | "VIDEO") => void;
   placeholder: string;
+  acceptVideo?: boolean;
+  uploadFolder?: string;
 }) {
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      const url = URL.createObjectURL(file);
-      onChange(url);
-    }
     e.target.value = "";
+    if (!file) return;
+
+    const isImage = file.type.startsWith("image/");
+    const isVideo = acceptVideo && file.type.startsWith("video/");
+    if (!isImage && !isVideo) return;
+
+    setUploadError("");
+    setUploading(true);
+    try {
+      const folder = uploadFolder ?? "images";
+      const url = await uploadFile(file, folder);
+      onChange(url);
+      setMediaType(isVideo ? "video" : "image");
+      onMediaTypeChange?.(isVideo ? "VIDEO" : "IMAGE");
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : t("admin_form.upload_error"));
+    } finally {
+      setUploading(false);
+    }
   };
+
+  const accept = acceptVideo ? "image/*,video/*" : "image/*";
+  const isVideoUrl = (url: string) => /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
+  const showAsVideo = mediaType === "video" || (mediaType === null && value && isVideoUrl(value));
 
   return (
     <div className="space-y-2">
@@ -57,21 +89,44 @@ function UploadCard({
         {label}
         {required ? " *" : ""}
       </label>
-      <label className="flex min-h-[140px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/80 p-4 transition-colors hover:border-slate-300">
+      <label
+        className={`flex min-h-[140px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 transition-colors ${
+          uploading ? "cursor-wait border-slate-200 bg-slate-100" : "border-slate-200 bg-slate-50/80 hover:border-slate-300"
+        }`}
+      >
         <input
-          accept="image/*"
+          accept={accept}
           className="hidden"
+          disabled={uploading}
           onChange={handleFileChange}
           type="file"
         />
-        <Upload className="mb-2 h-8 w-8 text-slate-300" />
-        <span className="text-sm font-medium text-slate-500">{placeholder}</span>
-        {value ? (
-          <img
-            alt={t("admin_form.preview_alt")}
-            className="mt-2 max-h-20 rounded-lg object-cover"
-            src={value}
-          />
+        {uploading ? (
+          <Loader2 className="mb-2 h-8 w-8 animate-spin text-slate-400" />
+        ) : (
+          <Upload className="mb-2 h-8 w-8 text-slate-300" />
+        )}
+        <span className="text-sm font-medium text-slate-500">
+          {uploading ? t("admin_form.uploading") : placeholder}
+        </span>
+        {uploadError ? (
+          <span className="mt-1 text-xs text-rose-600">{uploadError}</span>
+        ) : value ? (
+          showAsVideo ? (
+            <video
+              className="mt-2 max-h-20 w-full rounded-lg object-cover"
+              src={value}
+              controls
+              muted
+              playsInline
+            />
+          ) : (
+            <img
+              alt={t("admin_form.preview_alt")}
+              className="mt-2 max-h-20 w-full rounded-lg object-cover"
+              src={value}
+            />
+          )
         ) : null}
       </label>
     </div>
@@ -82,7 +137,7 @@ export function AdminStreamFormPage() {
   const navigate = useNavigate();
   const { streamId } = useParams();
 
-  const { data: festivalData } = useQuery<{ festival: Festival }>(GET_FESTIVAL_QUERY, {
+  const { data: festivalData, loading: loadingFestival } = useQuery<{ festival: Festival }>(GET_FESTIVAL_QUERY, {
     variables: { id: streamId },
     skip: !streamId,
   });
@@ -90,19 +145,23 @@ export function AdminStreamFormPage() {
   const editingFestival = festivalData?.festival;
   const isEditMode = Boolean(streamId && editingFestival);
 
-  const [form, setForm] = useState<FormState>(() => {
+  const [form, setForm] = useState<FormState>(defaultForm);
+
+  useEffect(() => {
     if (editingFestival) {
-      return {
+      setForm({
         name: editingFestival.name,
         coverImageUrl: editingFestival.coverImageUrl ?? "",
         conceptMediaUrl: editingFestival.conceptMediaUrl ?? "",
+        conceptMediaType: editingFestival.conceptMediaType ?? "IMAGE",
         conceptText: editingFestival.conceptText ?? "",
         rulesText: editingFestival.rulesText ?? "",
         status: editingFestival.status,
-      };
+      });
+    } else if (!streamId) {
+      setForm(defaultForm);
     }
-    return defaultForm;
-  });
+  }, [editingFestival, streamId]);
 
   const [error, setError] = useState("");
 
@@ -110,7 +169,11 @@ export function AdminStreamFormPage() {
     refetchQueries: [{ query: GET_FESTIVALS_QUERY }],
   });
 
-  const [updateStatus, { loading: updating }] = useMutation(UPDATE_FESTIVAL_STATUS_MUTATION);
+  const [updateFestival, { loading: updatingFestival }] = useMutation(UPDATE_FESTIVAL_MUTATION, {
+    refetchQueries: [{ query: GET_FESTIVALS_QUERY }, { query: GET_FESTIVAL_QUERY, variables: { id: streamId } }],
+  });
+
+  const [updateStatus, { loading: updatingStatus }] = useMutation(UPDATE_FESTIVAL_STATUS_MUTATION);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -122,7 +185,19 @@ export function AdminStreamFormPage() {
 
     try {
       if (isEditMode && editingFestival) {
-        // Update status if changed
+        await updateFestival({
+          variables: {
+            input: {
+              festivalId: editingFestival.id,
+              name: form.name.trim(),
+              coverImageUrl: form.coverImageUrl,
+              conceptMediaType: form.conceptMediaUrl ? form.conceptMediaType : undefined,
+              conceptMediaUrl: form.conceptMediaUrl || undefined,
+              conceptText: form.conceptText || undefined,
+              rulesText: form.rulesText || undefined,
+            },
+          },
+        });
         if (form.status !== editingFestival.status) {
           await updateStatus({
             variables: {
@@ -136,6 +211,7 @@ export function AdminStreamFormPage() {
             input: {
               name: form.name.trim(),
               coverImageUrl: form.coverImageUrl,
+              conceptMediaType: form.conceptMediaUrl ? form.conceptMediaType : undefined,
               conceptMediaUrl: form.conceptMediaUrl || undefined,
               conceptText: form.conceptText || undefined,
               rulesText: form.rulesText || undefined,
@@ -150,7 +226,7 @@ export function AdminStreamFormPage() {
     }
   };
 
-  const submitting = creating || updating;
+  const submitting = creating || updatingFestival || updatingStatus;
 
   return (
     <div className="mx-auto max-w-2xl animate-fade-in px-4 py-5">
@@ -166,6 +242,12 @@ export function AdminStreamFormPage() {
         {isEditMode ? t("admin_form.edit_stream") : t("admin_form.create_festival")}
       </h1>
 
+      {isEditMode && loadingFestival ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>{t("admin_form.loading")}</span>
+        </div>
+      ) : (
       <form className="space-y-6" onSubmit={handleSubmit} noValidate>
         {/* بخش ۱: نام جشنواره + تصویر کاور */}
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -214,7 +296,10 @@ export function AdminStreamFormPage() {
               label={t("admin_form.concept_media")}
               value={form.conceptMediaUrl}
               onChange={(v) => setForm((prev) => ({ ...prev, conceptMediaUrl: v }))}
+              onMediaTypeChange={(t) => setForm((prev) => ({ ...prev, conceptMediaType: t }))}
               placeholder={t("admin_form.upload_placeholder")}
+              acceptVideo
+              uploadFolder="concept"
             />
           </div>
         </div>
@@ -270,6 +355,7 @@ export function AdminStreamFormPage() {
           </Button>
         </div>
       </form>
+      )}
     </div>
   );
 }

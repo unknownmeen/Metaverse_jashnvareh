@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { formatDateFa, formatNumberFa } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { resolveMediaUrl } from "@/lib/upload";
 import type { ImageItem } from "@/types/models";
 
 interface ImageCardProps {
@@ -25,7 +26,7 @@ export function ImageCard({ image, subtitle }: ImageCardProps) {
             alt={image.title ?? ""}
             className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
             loading="lazy"
-            src={image.url}
+            src={resolveMediaUrl(image.url)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           <div className="absolute bottom-3 left-3 right-3 flex items-center gap-3 opacity-0 transition-all duration-300 group-hover:opacity-100">

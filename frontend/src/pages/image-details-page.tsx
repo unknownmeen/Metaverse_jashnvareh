@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "@/features/comments/star-rating";
 import { formatDateFa, formatNumberFa, formatTimeFa } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { resolveMediaUrl } from "@/lib/upload";
 import {
   GET_IMAGE_QUERY,
   GET_IMAGE_COMMENTS_QUERY,
@@ -151,13 +152,13 @@ export function ImageDetailsPage() {
               {image.isTopImage ? t("image_details.admin_featured") : t("image_details.set_featured")}
             </button>
           )}
-          <img alt={image.title ?? ""} className="max-h-[70vh] w-full object-contain" src={image.url} />
+          <img alt={image.title ?? ""} className="max-h-[70vh] w-full object-contain" src={resolveMediaUrl(image.url)} />
         </div>
         <ImageZoomOverlay
           alt={image.title ?? ""}
           onClose={() => setZoomOpen(false)}
           open={zoomOpen}
-          src={image.url}
+          src={resolveMediaUrl(image.url)}
         />
         <CardContent className="space-y-2 p-5">
           <h2 className="text-xl font-bold text-slate-800">{image.title}</h2>
@@ -186,7 +187,7 @@ export function ImageDetailsPage() {
                 >
                   <div className="mb-2 flex items-center gap-2">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={comment.author?.avatarUrl ?? ""} alt={comment.author?.realName ?? t("image_details.user")} />
+                      <AvatarImage src={resolveMediaUrl(comment.author?.avatarUrl)} alt={comment.author?.realName ?? t("image_details.user")} />
                       <AvatarFallback>{t("image_details.user")}</AvatarFallback>
                     </Avatar>
 

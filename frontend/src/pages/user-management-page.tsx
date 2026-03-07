@@ -72,7 +72,7 @@ function RoleSelect({
 }
 
 export function UserManagementPage() {
-  const { data, loading, refetch } = useQuery<{ allUsers: User[] }>(GET_ALL_USERS_QUERY);
+  const { data, loading } = useQuery<{ allUsers: User[] }>(GET_ALL_USERS_QUERY);
   const [createUsers, { loading: creating }] = useMutation(CREATE_USERS_MUTATION, {
     refetchQueries: [{ query: GET_ALL_USERS_QUERY }],
   });

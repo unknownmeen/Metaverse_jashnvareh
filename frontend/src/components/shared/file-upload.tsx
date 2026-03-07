@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle, Eye, RotateCcw, Trash2, Upload, X } from "luc
 
 import { cn } from "@/lib/utils";
 import { formatNumberFa } from "@/lib/format";
+import { uploadFile } from "@/lib/upload";
 
 const MAX_FILE_SIZE_MB = 10;
 
@@ -26,6 +27,7 @@ interface FileUploadProps {
   onFilesChange?: (files: File[]) => void;
   onSuccessCountChange?: (count: number) => void;
   className?: string;
+  uploadFolder?: string;
 }
 
 export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(function FileUpload({
@@ -33,71 +35,55 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(function Fi
   accept = "image/*",
   className,
   onSuccessCountChange,
+  uploadFolder = "images",
 }, ref) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const simulateUpload = useCallback((entry: UploadedFile) => {
-    const shouldFail = Math.random() < 0.15;
-    return new Promise<string>((resolve, reject) => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 8;
-        const done = progress >= 100 || (shouldFail && progress >= 80);
-        const finalStatus: "uploading" | "done" | "error" =
-          done && shouldFail ? "error" : done ? "done" : "uploading";
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === entry.id
-              ? {
-                  ...f,
-                  progress: done ? 100 : progress,
-                  status: finalStatus,
-                  error:
-                    finalStatus === "error"
-                      ? "متاسفانه آپلود انجام نشد. لطفا اتصال خود را چک کرده و دوباره امتحان کنید."
-                      : undefined,
-                }
-              : f,
-          ),
-        );
-        if (done) {
-          clearInterval(interval);
-          if (shouldFail) reject(new Error("Upload failed"));
-          else resolve(entry.url);
-        }
-      }, 100);
-    });
-  }, []);
-
   const processFile = useCallback(
-    (file: File): UploadedFile | null => {
+    async (file: File): Promise<UploadedFile | null> => {
       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return null;
       if (!file.type.startsWith("image/")) return null;
 
       const id = crypto.randomUUID();
-      const url = URL.createObjectURL(file);
       const entry: UploadedFile = {
         id,
         file,
-        url,
+        url: "",
         progress: 0,
         status: "uploading",
       };
+
       setFiles((prev) => {
         const next = [...prev, entry].slice(-maxFiles);
-        simulateUpload(entry);
         return next;
       });
-      return entry;
+
+      try {
+        const url = await uploadFile(file, uploadFolder);
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === id ? { ...f, url, progress: 100, status: "done" as const } : f,
+          ),
+        );
+        return { ...entry, url, progress: 100, status: "done" };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "متاسفانه آپلود انجام نشد. لطفا اتصال خود را چک کرده و دوباره امتحان کنید.";
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === id ? { ...f, status: "error" as const, error: msg } : f,
+          ),
+        );
+        return null;
+      }
     },
-    [maxFiles, simulateUpload],
+    [maxFiles, uploadFolder],
   );
 
   const handleFiles = useCallback(
     (fileList: FileList) => {
-      Array.from(fileList).forEach((file) => processFile(file));
+      Array.from(fileList).forEach((file) => void processFile(file));
     },
     [processFile],
   );
@@ -123,7 +109,7 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(function Fi
   const removeFile = useCallback((id: string) => {
     setFiles((prev) => {
       const entry = prev.find((f) => f.id === id);
-      if (entry?.url) URL.revokeObjectURL(entry.url);
+      if (entry?.url?.startsWith("blob:")) URL.revokeObjectURL(entry.url);
       return prev.filter((f) => f.id !== id);
     });
   }, []);
@@ -133,7 +119,7 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(function Fi
       const entry = files.find((f) => f.id === id);
       if (entry) {
         removeFile(id);
-        processFile(entry.file);
+        void processFile(entry.file);
       }
     },
     [files, processFile, removeFile],

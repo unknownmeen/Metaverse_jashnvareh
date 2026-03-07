@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { formatDateFa, formatTimeFa, toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { resolveMediaUrl } from "@/lib/upload";
 import {
   GET_MY_NOTIFICATIONS_QUERY,
   MARK_ALL_NOTIFICATIONS_READ_MUTATION,
@@ -288,7 +289,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-lg">
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <PillNavbar userAvatar={currentUser.avatarUrl ?? undefined} userName={currentUser.realName} />
+          <PillNavbar userAvatar={resolveMediaUrl(currentUser.avatarUrl) || undefined} userName={currentUser.realName ?? undefined} />
 
           {breadcrumb.length > 0 && (
             <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">

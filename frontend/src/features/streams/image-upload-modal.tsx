@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { CloudUpload, Eye, RotateCcw, Trash2, X } from "lucide-react";
 
 import { t } from "@/lib/i18n";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,74 +59,48 @@ export function ImageUploadModal({ open, onOpenChange, onComplete }: ImageUpload
     [onOpenChange, reset],
   );
 
-  const simulateUpload = useCallback((entry: FileEntry) => {
-    const shouldFail = Math.random() < 0.15;
-
-    return new Promise<string>((resolve, reject) => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 8;
-        const done = progress >= 100 || (shouldFail && progress >= 80);
-        const finalProgress = done ? 100 : progress;
-        const finalStatus: FileStatus =
-          done && shouldFail ? "error" : done ? "success" : "uploading";
-
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === entry.id
-              ? {
-                  ...f,
-                  progress: finalProgress,
-                  status: finalStatus,
-                  error:
-                    finalStatus === "error"
-                      ? t("image_upload.upload_failed")
-                      : undefined,
-                }
-              : f,
-          ),
-        );
-
-        if (done) {
-          clearInterval(interval);
-          if (shouldFail) reject(new Error("Upload failed"));
-          else resolve(entry.url);
-        }
-      }, 100);
-    });
-  }, []);
-
   const processFile = useCallback(
-    (file: File): FileEntry | null => {
+    async (file: File): Promise<FileEntry | null> => {
       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return null;
       if (!file.type.startsWith("image/")) return null;
 
       const id = crypto.randomUUID();
-      const url = URL.createObjectURL(file);
       const entry: FileEntry = {
         id,
         file,
-        url,
+        url: "",
         status: "uploading",
         progress: 0,
       };
 
-      setFiles((prev) => {
-        const next = [...prev, entry].slice(-MAX_FILES);
-        simulateUpload(entry);
-        return next;
-      });
+      setFiles((prev) => [...prev, entry].slice(-MAX_FILES));
 
-      return entry;
+      try {
+        const url = await uploadFile(file, "images");
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === id ? { ...f, url, progress: 100, status: "success" } : f,
+          ),
+        );
+        return { ...entry, url, progress: 100, status: "success" };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : t("image_upload.upload_failed");
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === id ? { ...f, status: "error", error: msg } : f,
+          ),
+        );
+        return null;
+      }
     },
-    [simulateUpload],
+    [],
   );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragActive(false);
-      Array.from(e.dataTransfer.files).forEach((file) => processFile(file));
+      Array.from(e.dataTransfer.files).forEach((file) => void processFile(file));
     },
     [processFile],
   );
@@ -144,7 +119,7 @@ export function ImageUploadModal({ open, onOpenChange, onComplete }: ImageUpload
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const selected = e.target.files;
       if (selected) {
-        Array.from(selected).forEach((file) => processFile(file));
+        Array.from(selected).forEach((file) => void processFile(file));
       }
       e.target.value = "";
     },
@@ -152,17 +127,13 @@ export function ImageUploadModal({ open, onOpenChange, onComplete }: ImageUpload
   );
 
   const removeFile = useCallback((id: string) => {
-    setFiles((prev) => {
-      const entry = prev.find((f) => f.id === id);
-      if (entry?.url) URL.revokeObjectURL(entry.url);
-      return prev.filter((f) => f.id !== id);
-    });
+    setFiles((prev) => prev.filter((f) => f.id !== id));
   }, []);
 
   const retryFile = useCallback(
     (entry: FileEntry) => {
       removeFile(entry.id);
-      processFile(entry.file);
+      void processFile(entry.file);
     },
     [processFile, removeFile],
   );
