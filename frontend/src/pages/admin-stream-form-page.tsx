@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, Loader2, Upload, X } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 
@@ -112,21 +112,37 @@ function UploadCard({
         {uploadError ? (
           <span className="mt-1 text-xs text-rose-600">{uploadError}</span>
         ) : value ? (
-          showAsVideo ? (
-            <video
-              className="mt-2 max-h-20 w-full rounded-lg object-cover"
-              src={value}
-              controls
-              muted
-              playsInline
-            />
-          ) : (
-            <img
-              alt={t("admin_form.preview_alt")}
-              className="mt-2 max-h-20 w-full rounded-lg object-cover"
-              src={value}
-            />
-          )
+          <div className="relative mt-2 w-full">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onChange("");
+                setMediaType(null);
+                onMediaTypeChange?.("IMAGE");
+              }}
+              className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
+              title={t("admin_form.remove")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {showAsVideo ? (
+              <video
+                className="max-h-20 w-full rounded-lg object-cover"
+                src={value}
+                controls
+                muted
+                playsInline
+              />
+            ) : (
+              <img
+                alt={t("admin_form.preview_alt")}
+                className="max-h-20 w-full rounded-lg object-cover"
+                src={value}
+              />
+            )}
+          </div>
         ) : null}
       </label>
     </div>
