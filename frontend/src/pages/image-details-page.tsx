@@ -102,7 +102,7 @@ export function ImageDetailsPage() {
       await rateImage({ variables: { input: { imageId: image.id, score: rating } } });
 
       // Add comment (admin review or regular)
-      if (currentUser.role === "ADMIN") {
+      if (currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN") {
         await addAdminReview({ variables: { input: { imageId: image.id, text: text.trim() } } });
       } else {
         await addComment({ variables: { input: { imageId: image.id, text: text.trim() } } });
@@ -137,7 +137,7 @@ export function ImageDetailsPage() {
           >
             <Maximize2 className="h-5 w-5" />
           </button>
-          {currentUser.role === "ADMIN" && (
+          {(currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN") && (
             <button
               type="button"
               onClick={handleToggleFeatured}

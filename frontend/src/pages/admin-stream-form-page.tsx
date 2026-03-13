@@ -182,6 +182,10 @@ export function AdminStreamFormPage() {
       setError(t("admin_form.name_cover_required"));
       return;
     }
+    if (isEditMode && !form.status) {
+      setError(t("admin_form.status_required"));
+      return;
+    }
 
     try {
       if (isEditMode && editingFestival) {
@@ -272,6 +276,25 @@ export function AdminStreamFormPage() {
               onChange={(v) => setForm((prev) => ({ ...prev, coverImageUrl: v }))}
               placeholder={t("admin_form.cover_placeholder")}
             />
+
+            {isEditMode && (
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-400" htmlFor="status">
+                  {t("admin_form.status_label")} *
+                </label>
+                <select
+                  id="status"
+                  required
+                  value={form.status}
+                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as FestivalStatus }))}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-300"
+                >
+                  <option value="UNOPENED">{t("admin_form.status_unopened")}</option>
+                  <option value="OPEN">{t("admin_form.status_open")}</option>
+                  <option value="CLOSED">{t("admin_form.status_closed")}</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -320,21 +343,6 @@ export function AdminStreamFormPage() {
                 className="rounded-xl border-slate-200 bg-slate-50 focus:border-primary-300 focus:ring-primary-300"
               />
             </div>
-
-            {isEditMode && (
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-400">{t("admin_form.status_label")}</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as FestivalStatus }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-                >
-                  <option value="UNOPENED">{t("admin_form.status_unopened")}</option>
-                  <option value="OPEN">{t("admin_form.status_open")}</option>
-                  <option value="CLOSED">{t("admin_form.status_closed")}</option>
-                </select>
-              </div>
-            )}
           </div>
         </div>
 

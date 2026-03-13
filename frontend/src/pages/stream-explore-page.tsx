@@ -112,7 +112,11 @@ export function StreamExplorePage() {
       <Card className="overflow-hidden border-white/70">
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="aspect-video overflow-hidden lg:aspect-auto lg:min-h-[260px]">
-            <img alt={festival.name} className="h-full w-full object-cover" src={resolveMediaUrl(festival.coverImageUrl)} />
+            <img
+              alt={festival.name}
+              className={`h-full w-full object-cover ${festival.status === "CLOSED" ? "brightness-[0.5]" : ""}`}
+              src={resolveMediaUrl(festival.coverImageUrl)}
+            />
           </div>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-center justify-between gap-2">

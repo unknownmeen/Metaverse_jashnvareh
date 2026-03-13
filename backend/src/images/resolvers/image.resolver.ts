@@ -60,7 +60,7 @@ export class ImageResolver {
 
   @Mutation(() => ImageModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   async toggleTopImage(@Args('imageId', { type: () => ID }) imageId: string) {
     return this.imageWriteService.toggleTopImage(imageId);
   }

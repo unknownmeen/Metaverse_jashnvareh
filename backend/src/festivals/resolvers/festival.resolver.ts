@@ -31,14 +31,14 @@ export class FestivalResolver {
 
   @Mutation(() => FestivalModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   async createFestival(@Args('input') input: CreateFestivalInput) {
     return this.festivalWriteService.create(input);
   }
 
   @Mutation(() => FestivalModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   async updateFestival(@Args('input') input: UpdateFestivalInput) {
     return this.festivalWriteService.update(input);
   }
@@ -50,14 +50,14 @@ export class FestivalResolver {
    */
   @Mutation(() => FestivalModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   async updateFestivalStatus(@Args('input') input: UpdateFestivalStatusInput) {
     return this.festivalWriteService.updateStatus(input.festivalId, input.newStatus);
   }
 
   @Mutation(() => Boolean)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   async deleteFestival(@Args('festivalId', { type: () => ID }) festivalId: string) {
     return this.festivalWriteService.delete(festivalId);
   }

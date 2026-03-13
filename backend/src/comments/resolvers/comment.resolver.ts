@@ -38,7 +38,7 @@ export class CommentResolver {
    */
   @Mutation(() => CommentModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   async addAdminReview(
     @CurrentUser() user: User,
     @Args('input') input: AddCommentInput,
