@@ -18,6 +18,8 @@ export class NotificationRepository {
     text: string;
     userId: string;
     senderId?: string;
+    imageId?: string;
+    festivalId?: string;
   }): Promise<Notification> {
     return this.prisma.notification.create({ data });
   }

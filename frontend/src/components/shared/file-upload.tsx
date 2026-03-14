@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle, Eye, RotateCcw, Trash2, Upload, X } from "luc
 
 import { cn } from "@/lib/utils";
 import { formatNumberFa } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { uploadFile } from "@/lib/upload";
 
 const MAX_FILE_SIZE_MB = 10;
@@ -43,7 +44,22 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(function Fi
 
   const processFile = useCallback(
     async (file: File): Promise<UploadedFile | null> => {
-      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return null;
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        const id = crypto.randomUUID();
+        const sizeErrorEntry: UploadedFile = {
+          id,
+          file,
+          url: "",
+          progress: 0,
+          status: "error",
+          error: t("upload.file_too_large"),
+        };
+        setFiles((prev) => {
+          const next = [...prev, sizeErrorEntry].slice(-maxFiles);
+          return next;
+        });
+        return null;
+      }
       if (!file.type.startsWith("image/")) return null;
 
       const id = crypto.randomUUID();

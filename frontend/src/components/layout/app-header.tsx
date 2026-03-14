@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, CheckCheck, ChevronLeft, HelpCircle, Home, Layers, ShieldCheck, UserCircle } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 
 import { useAppStore } from "@/app/store";
@@ -11,6 +11,8 @@ import { formatDateFa, formatTimeFa, toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { resolveMediaUrl } from "@/lib/upload";
 import {
+  GET_FESTIVAL_QUERY,
+  GET_IMAGE_QUERY,
   GET_MY_NOTIFICATIONS_QUERY,
   MARK_ALL_NOTIFICATIONS_READ_MUTATION,
   MARK_NOTIFICATION_READ_MUTATION,
@@ -24,23 +26,46 @@ interface BreadcrumbItem {
   label: string;
 }
 
-function buildBreadcrumb(pathname: string): BreadcrumbItem[] {
+interface BreadcrumbOverrides {
+  streamName?: string;
+  streamId?: string;
+  imageTitle?: string;
+  editStreamName?: string;
+}
+
+function buildBreadcrumb(pathname: string, overrides?: BreadcrumbOverrides): BreadcrumbItem[] {
   if (pathname === "/home") return [{ path: "/home", label: t("nav.home") }];
   if (pathname === "/profile") return [{ path: "/profile", label: t("nav.profile") }];
   if (pathname === "/help") return [{ path: "/help", label: t("nav.help") }];
   if (pathname === "/streams") return [{ path: "/streams", label: t("nav.streams") }];
   if (pathname.startsWith("/streams/") && pathname !== "/streams") {
-    return [{ path: "/streams", label: t("nav.streams") }, { path: pathname, label: t("nav.breadcrumb_stream") }];
+    const streamLabel = overrides?.streamName ?? t("nav.breadcrumb_stream");
+    return [{ path: "/streams", label: t("nav.streams") }, { path: pathname, label: streamLabel }];
   }
   if (pathname === "/admin") return [{ path: "/admin", label: t("nav.admin_view") }];
   if (pathname === "/admin/streams/new") {
     return [{ path: "/admin", label: t("nav.admin_view") }, { path: "/admin/streams/new", label: t("admin.create_stream") }];
   }
   if (pathname.match(/^\/admin\/streams\/[^/]+\/edit$/)) {
-    return [{ path: "/admin", label: t("nav.admin_view") }, { path: pathname, label: t("nav.breadcrumb_edit_stream") }];
+    const editLabel =
+      overrides?.editStreamName != null && overrides.editStreamName.trim() !== ""
+        ? t("nav.breadcrumb_edit_stream_with_name", { name: overrides.editStreamName })
+        : t("nav.breadcrumb_edit_stream");
+    return [{ path: "/admin", label: t("nav.admin_view") }, { path: pathname, label: editLabel }];
   }
   if (pathname === "/super-admin/users") return [{ path: "/super-admin/users", label: t("nav.user_management") }];
-  if (pathname.startsWith("/images/")) return [{ path: pathname, label: t("nav.breadcrumb_image") }];
+  if (pathname.startsWith("/images/")) {
+    const imageLabel =
+      overrides?.imageTitle != null && overrides.imageTitle.trim() !== ""
+        ? t("nav.breadcrumb_image_with_title", { title: overrides.imageTitle })
+        : t("nav.breadcrumb_image");
+    const items: BreadcrumbItem[] = [{ path: "/streams", label: t("nav.streams") }];
+    if (overrides?.streamName && overrides?.streamId) {
+      items.push({ path: `/streams/${overrides.streamId}`, label: overrides.streamName });
+    }
+    items.push({ path: pathname, label: imageLabel });
+    return items;
+  }
   return [];
 }
 
@@ -146,10 +171,11 @@ function PillNavbar({ userAvatar, userName }: { userAvatar?: string; userName?: 
 
 function NotificationPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { data } = useQuery<{ myNotifications: NotificationItem[] }>(GET_MY_NOTIFICATIONS_QUERY, {
     skip: !open,
-    pollInterval: NOTIFICATIONS_POLL_MS,
   });
 
   const [markAllRead] = useMutation(MARK_ALL_NOTIFICATIONS_READ_MUTATION, {
@@ -178,15 +204,55 @@ function NotificationPanel({ open, onClose }: { open: boolean; onClose: () => vo
         return "💬";
       case "RATING":
         return "⭐";
+      case "TOP_IMAGE":
+        return "🏆";
+      case "SYSTEM":
+        return "📋";
       default:
         return "🔔";
     }
   };
 
   const handleNotificationClick = (n: NotificationItem) => {
-    markOneRead({ variables: { id: n.id } });
+    if (!n.isRead) {
+      markOneRead({ variables: { id: n.id } });
+    }
     onClose();
-    // Navigate based on notification type - for now just close
+
+    // اعلانات مربوط به تصویر → همیشه به صفحه جزئیات تصویر
+    if (n.imageId) {
+      const imagePath = `/images/${n.imageSlug ?? n.imageId}`;
+      const wasOnImagePage = location.pathname === imagePath;
+      if (!wasOnImagePage) {
+        navigate(imagePath);
+      }
+      const section =
+        n.type === "COMMENT" || n.type === "SYSTEM"
+          ? "comments"
+          : n.type === "RATING"
+            ? "rate-comment"
+            : "image";
+      const delay = wasOnImagePage ? 100 : 500;
+      setTimeout(() => {
+        const el = document.querySelector(`[data-section="${section}"][data-image-id="${n.imageId}"]`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, delay);
+      return;
+    }
+
+    // اعلانات مربوط به جریان/استریم → به صفحه جریان
+    if (n.festivalId) {
+      const streamPath = `/streams/${n.festivalSlug ?? n.festivalId}`;
+      const wasOnStreamPage = location.pathname.startsWith(streamPath);
+      if (!wasOnStreamPage) {
+        navigate(streamPath);
+      }
+      const delay = wasOnStreamPage ? 100 : 500;
+      setTimeout(() => {
+        const el = document.querySelector(`[data-section="images"][data-festival-id="${n.festivalId}"]`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, delay);
+    }
   };
 
   const hasUnread = myNotifications.some((n) => !n.isRead);
@@ -248,13 +314,42 @@ export function AppHeader() {
   const { currentUser } = useAppStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const { streamId, imageId } = useParams();
   const [showNotif, setShowNotif] = useState(false);
   const previousUnreadRef = useRef<number | null>(null);
 
-  const breadcrumb = buildBreadcrumb(location.pathname);
+  const isStreamPage = location.pathname.startsWith("/streams/");
+  const isAdminEditPage = location.pathname.match(/^\/admin\/streams\/[^/]+\/edit$/);
+
+  const { data: festivalData } = useQuery<{ festival: { id: string; slug: string; name: string } }>(GET_FESTIVAL_QUERY, {
+    variables: { idOrSlug: streamId },
+    skip: !streamId || (!isStreamPage && !isAdminEditPage),
+  });
+
+  const { data: imageData } = useQuery<{ image: { title?: string | null; festivalId: string; festival?: { id: string; slug: string; name: string } | null } }>(
+    GET_IMAGE_QUERY,
+    {
+      variables: { idOrSlug: imageId },
+      skip: !imageId || !location.pathname.startsWith("/images/"),
+    },
+  );
+
+  const overrides: BreadcrumbOverrides | undefined =
+    location.pathname.startsWith("/streams/") && streamId
+      ? { streamName: festivalData?.festival?.name }
+      : location.pathname.startsWith("/images/") && imageData?.image
+        ? {
+            streamName: imageData.image.festival?.name,
+            streamId: imageData.image.festival?.slug ?? imageData.image.festivalId,
+            imageTitle: imageData.image.title ?? undefined,
+          }
+        : isAdminEditPage && streamId
+          ? { editStreamName: festivalData?.festival?.name }
+          : undefined;
+
+  const breadcrumb = buildBreadcrumb(location.pathname, overrides);
 
   const { data, refetch } = useQuery<{ myNotifications: NotificationItem[] }>(GET_MY_NOTIFICATIONS_QUERY, {
-    pollInterval: NOTIFICATIONS_POLL_MS,
     fetchPolicy: "network-only",
   });
 
@@ -269,17 +364,27 @@ export function AppHeader() {
   }, [unreadCount]);
 
   useEffect(() => {
+    if (!currentUser) return;
+
     const onVisibilityChange = () => {
       if (!document.hidden) refetch();
     };
+
     const onFocus = () => refetch();
+
+    const notificationsInterval = setInterval(() => {
+      if (!document.hidden) refetch();
+    }, NOTIFICATIONS_POLL_MS);
+
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("focus", onFocus);
+
     return () => {
+      clearInterval(notificationsInterval);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("focus", onFocus);
     };
-  }, [refetch]);
+  }, [currentUser, refetch]);
 
   if (!currentUser) {
     return null;

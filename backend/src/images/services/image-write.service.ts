@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FestivalStatus, Image } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { ImageRepository } from '../repositories/image.repository';
 import { FestivalRepository } from '../../festivals/repositories/festival.repository';
 import { UploadImageInput } from '../dto/upload-image.input';
@@ -30,13 +31,38 @@ export class ImageWriteService {
       );
     }
 
+    const slug = await this.generateSlug(input.title ?? '');
     return this.imageRepository.create({
+      slug,
       url: input.url,
       title: input.title,
       tags: input.tags ?? [],
       festival: { connect: { id: input.festivalId } },
       user: { connect: { id: userId } },
     });
+  }
+
+  /** تولید slug از عنوان با fallback برای تضمین یکتایی */
+  private async generateSlug(title: string): Promise<string> {
+    const base = (this.slugFromTitle(title) || 'تصویر').slice(0, 100);
+    const uniqueSuffix = randomUUID().slice(0, 8);
+    return `${base}-${uniqueSuffix}`;
+  }
+
+  private slugFromTitle(title: string): string {
+    try {
+      return (
+        title
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/\u200c/g, '-')
+          .replace(/[^\u0600-\u06FFa-zA-Z0-9-]/g, '')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '') || ''
+      );
+    } catch {
+      return '';
+    }
   }
 
   /**

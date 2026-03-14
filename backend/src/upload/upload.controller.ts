@@ -4,13 +4,16 @@ import {
   UploadedFile,
   UseInterceptors,
   UseGuards,
+  UseFilters,
   Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { UploadService } from './upload.service';
+import { FileSizeExceptionFilter } from './file-size-exception.filter';
 
 @Controller('upload')
+@UseFilters(FileSizeExceptionFilter)
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 

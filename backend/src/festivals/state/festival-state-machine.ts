@@ -9,7 +9,7 @@ import { ClosedState } from './closed.state';
  * Festival State Machine
  *
  * Manages valid state transitions for festival lifecycle:
- *   UNOPENED  ──▶  OPEN  ──▶  CLOSED
+ *   UNOPENED  ──▶  OPEN  ◀──▶  CLOSED
  *
  * Each state is an isolated class implementing IFestivalState.
  * The machine resolves the current state, validates the transition,

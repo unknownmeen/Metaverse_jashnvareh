@@ -12,6 +12,9 @@ export class UserWriteService {
   constructor(private readonly userRepository: UserRepository) {}
 
   async updateProfile(userId: string, input: UpdateProfileInput): Promise<User> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new NotFoundException('کاربر یافت نشد');
+
     const updateData: Record<string, any> = {};
 
     if (input.realName !== undefined) {
@@ -19,7 +22,11 @@ export class UserWriteService {
     }
 
     if (input.displayName !== undefined) {
-      updateData.displayName = input.displayName;
+      const trimmed = input.displayName.trim();
+      if (user.gender === Gender.FEMALE && !trimmed) {
+        throw new BadRequestException('نام نمایشی الزامی است.');
+      }
+      updateData.displayName = trimmed || null;
     }
 
     if (input.avatarUrl !== undefined) {
@@ -27,8 +34,6 @@ export class UserWriteService {
     }
 
     if (input.newPassword) {
-      const user = await this.userRepository.findById(userId);
-      if (!user) throw new NotFoundException('کاربر یافت نشد');
       if (!input.currentPassword) {
         throw new BadRequestException('برای تغییر رمز عبور، رمز فعلی را وارد کنید');
       }
@@ -45,6 +50,10 @@ export class UserWriteService {
   async createUsers(inputs: CreateUserInput[]): Promise<User[]> {
     const results: User[] = [];
     for (const input of inputs) {
+      const gender = input.gender ?? Gender.MALE;
+      if (gender === Gender.FEMALE && !input.displayName?.trim()) {
+        throw new BadRequestException('برای کاربران خانم، نام نمایشی الزامی است.');
+      }
       const existing = await this.userRepository.findByPhone(input.phone);
       if (existing) {
         throw new ConflictException(`شماره ${input.phone} قبلاً ثبت شده است`);
@@ -54,7 +63,7 @@ export class UserWriteService {
         phone: input.phone,
         passwordHash,
         role: input.role,
-        gender: input.gender ?? Gender.MALE,
+        gender,
         realName: input.realName?.trim() || null,
         displayName: input.displayName?.trim() || null,
       });

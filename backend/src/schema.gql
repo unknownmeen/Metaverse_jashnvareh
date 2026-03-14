@@ -44,6 +44,7 @@ input CreateFestivalInput {
   coverImageUrl: String
   name: String!
   rulesText: String
+  status: String = "UNOPENED"
 }
 
 input CreateUserInput {
@@ -70,6 +71,7 @@ type Festival {
   imageCount: Float!
   name: String!
   rulesText: String
+  slug: String!
   status: FestivalStatus!
   updatedAt: DateTime!
 }
@@ -94,6 +96,7 @@ type Image {
   festivalId: String!
   id: ID!
   isTopImage: Boolean!
+  slug: String!
   tags: [String!]!
   title: String
   url: String!
@@ -129,7 +132,11 @@ type Mutation {
 
 type Notification {
   createdAt: DateTime!
+  festivalId: String
+  festivalSlug: String
   id: ID!
+  imageId: String
+  imageSlug: String
   isRead: Boolean!
   senderId: String
   text: String!
@@ -146,10 +153,10 @@ enum NotificationType {
 
 type Query {
   allUsers: [User!]!
-  festival(id: ID!): Festival!
+  festival(idOrSlug: String!): Festival!
   festivalImages(festivalId: ID!): [Image!]!
   festivals: [Festival!]!
-  image(id: ID!): Image!
+  image(idOrSlug: String!): Image!
   imageAverageRating(imageId: ID!): AverageRating!
   imageComments(imageId: ID!): [Comment!]!
   me: User!

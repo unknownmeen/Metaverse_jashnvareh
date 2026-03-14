@@ -11,6 +11,8 @@ import { resolveMediaUrl } from "@/lib/upload";
 import { uploadFile } from "@/lib/upload";
 import { UPDATE_PROFILE_MUTATION } from "@/graphql/operations";
 
+const MAX_FILE_SIZE_MB = 10;
+
 export function ProfilePage() {
   const { currentUser, logout } = useAppStore();
 
@@ -36,6 +38,10 @@ export function ProfilePage() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setMessage(t("upload.file_too_large"));
+      return;
+    }
     setUploadingAvatar(true);
     try {
       const url = await uploadFile(file, "avatars");
@@ -52,6 +58,11 @@ export function ProfilePage() {
 
     if (!realName.trim()) {
       setMessage(t("profile.name_required"));
+      return;
+    }
+
+    if (currentUser.gender?.toUpperCase() === "FEMALE" && !displayName.trim()) {
+      setMessage(t("profile.display_name_required"));
       return;
     }
 
@@ -150,13 +161,14 @@ export function ProfilePage() {
           {currentUser.gender?.toUpperCase() === "FEMALE" ? (
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-400" htmlFor="displayName">
-                {t("profile.display_name")}
+                {t("profile.display_name")} *
               </label>
               <input
                 id="displayName"
                 type="text"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
+                required
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition-all focus:border-primary-300 focus:ring-2 focus:ring-primary-300"
               />
             </div>

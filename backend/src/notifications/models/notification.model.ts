@@ -21,6 +21,18 @@ export class NotificationModel {
   @Field({ nullable: true })
   senderId?: string;
 
+  @Field({ nullable: true })
+  imageId?: string;
+
+  @Field({ nullable: true, description: 'Slug تصویر برای لینک فارسی' })
+  imageSlug?: string;
+
+  @Field({ nullable: true })
+  festivalId?: string;
+
+  @Field({ nullable: true, description: 'Slug جریان برای لینک فارسی' })
+  festivalSlug?: string;
+
   @Field()
   createdAt: Date;
 }

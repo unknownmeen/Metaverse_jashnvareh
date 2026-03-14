@@ -13,14 +13,16 @@ export class FestivalWriteService {
   ) {}
 
   async create(input: CreateFestivalInput): Promise<Festival> {
+    const slug = await this.ensureUniqueSlug(this.slugFromName(input.name));
     return this.festivalRepository.create({
+      slug,
       name: input.name,
       coverImageUrl: input.coverImageUrl,
       conceptMediaType: input.conceptMediaType,
       conceptMediaUrl: input.conceptMediaUrl,
       conceptText: input.conceptText,
       rulesText: input.rulesText,
-      status: FestivalStatus.UNOPENED,
+      status: input.status ?? FestivalStatus.UNOPENED,
     });
   }
 
@@ -30,14 +32,17 @@ export class FestivalWriteService {
       throw new NotFoundException('جشنواره یافت نشد');
     }
 
-    return this.festivalRepository.update(input.festivalId, {
+    const newSlug = await this.ensureUniqueSlug(this.slugFromName(input.name), input.festivalId);
+    const updateData: Record<string, unknown> = {
+      slug: newSlug,
       name: input.name,
       coverImageUrl: input.coverImageUrl,
       conceptMediaType: input.conceptMediaType ?? undefined,
       conceptMediaUrl: input.conceptMediaUrl ?? null,
       conceptText: input.conceptText ?? null,
       rulesText: input.rulesText ?? null,
-    });
+    };
+    return this.festivalRepository.update(input.festivalId, updateData);
   }
 
   /**
@@ -67,5 +72,30 @@ export class FestivalWriteService {
 
     await this.festivalRepository.delete(festivalId);
     return true;
+  }
+
+  /** تولید slug از نام جریان */
+  private slugFromName(name: string): string {
+    return (
+      name
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/\u200c/g, '-') // نیم‌فاصله
+        .replace(/[^\p{L}\p{N}-]/gu, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'جریان'
+    );
+  }
+
+  /** اطمینان از یکتا بودن slug */
+  private async ensureUniqueSlug(baseSlug: string, excludeFestivalId?: string): Promise<string> {
+    let slug = baseSlug;
+    let suffix = 0;
+    while (true) {
+      const existing = await this.festivalRepository.findBySlug(slug);
+      if (!existing || existing.id === excludeFestivalId) return slug;
+      suffix++;
+      slug = `${baseSlug}-${suffix}`;
+    }
   }
 }

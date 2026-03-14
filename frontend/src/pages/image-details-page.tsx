@@ -1,6 +1,6 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Award, Loader2, Maximize2 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 
 import { ImageZoomOverlay } from "@/components/shared/image-zoom-overlay";
@@ -25,6 +25,7 @@ import {
 import type { ImageItem, Comment } from "@/types/models";
 
 export function ImageDetailsPage() {
+  const navigate = useNavigate();
   const { imageId } = useParams();
   const { currentUser } = useAppStore();
 
@@ -34,31 +35,30 @@ export function ImageDetailsPage() {
   const [zoomOpen, setZoomOpen] = useState(false);
 
   const { data: imageData, loading: imageLoading } = useQuery<{ image: ImageItem }>(GET_IMAGE_QUERY, {
-    variables: { id: imageId },
+    variables: { idOrSlug: imageId },
     skip: !imageId,
   });
+
+  const image = imageData?.image;
 
   const { data: commentsData } = useQuery<{ imageComments: Comment[] }>(GET_IMAGE_COMMENTS_QUERY, {
-    variables: { imageId },
-    skip: !imageId,
+    variables: { imageId: image?.id },
+    skip: !image?.id,
   });
 
-  const [addComment, { loading: commenting }] = useMutation(ADD_COMMENT_MUTATION, {
-    refetchQueries: [
-      { query: GET_IMAGE_COMMENTS_QUERY, variables: { imageId } },
-      { query: GET_IMAGE_QUERY, variables: { id: imageId } },
-    ],
-  });
+  const [addComment, { loading: commenting }] = useMutation(ADD_COMMENT_MUTATION);
 
-  const [addAdminReview] = useMutation(ADD_ADMIN_REVIEW_MUTATION, {
-    refetchQueries: [
-      { query: GET_IMAGE_COMMENTS_QUERY, variables: { imageId } },
-    ],
-  });
+  const [addAdminReview] = useMutation(ADD_ADMIN_REVIEW_MUTATION);
 
-  const [rateImage] = useMutation(RATE_IMAGE_MUTATION, {
-    refetchQueries: [{ query: GET_IMAGE_QUERY, variables: { id: imageId } }],
-  });
+  const [rateImage] = useMutation(RATE_IMAGE_MUTATION);
+
+  // ریدایرکت از UUID به slug فارسی در آدرس
+  const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  useEffect(() => {
+    if (image?.slug && imageId && isUuid(imageId) && imageId !== image.slug) {
+      navigate(`/images/${image.slug}`, { replace: true });
+    }
+  }, [image?.slug, imageId, navigate]);
 
   const [toggleTopImage] = useMutation(TOGGLE_TOP_IMAGE_MUTATION);
 
@@ -70,10 +70,14 @@ export function ImageDetailsPage() {
     );
   }
 
-  const image = imageData?.image;
+  const isAdminStyleComment = (c: Comment) =>
+    c.isAdminReview || c.author?.role === "ADMIN" || c.author?.role === "SUPER_ADMIN";
+
   const imageComments = [...(commentsData?.imageComments ?? [])].sort((a, b) => {
-    if (a.isAdminReview && !b.isAdminReview) return -1;
-    if (!a.isAdminReview && b.isAdminReview) return 1;
+    const aAdmin = isAdminStyleComment(a);
+    const bAdmin = isAdminStyleComment(b);
+    if (aAdmin && !bAdmin) return -1;
+    if (!aAdmin && bAdmin) return 1;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
@@ -98,14 +102,22 @@ export function ImageDetailsPage() {
     }
 
     try {
-      // Rate the image
-      await rateImage({ variables: { input: { imageId: image.id, score: rating } } });
+      const refetchQueries = [
+        { query: GET_IMAGE_COMMENTS_QUERY, variables: { imageId: image.id } },
+        { query: GET_IMAGE_QUERY, variables: { idOrSlug: image.slug ?? image.id } },
+      ];
+      await rateImage({ variables: { input: { imageId: image.id, score: rating } }, refetchQueries });
 
-      // Add comment (admin review or regular)
       if (currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN") {
-        await addAdminReview({ variables: { input: { imageId: image.id, text: text.trim() } } });
+        await addAdminReview({
+          variables: { input: { imageId: image.id, text: text.trim() } },
+          refetchQueries: [{ query: GET_IMAGE_COMMENTS_QUERY, variables: { imageId: image.id } }],
+        });
       } else {
-        await addComment({ variables: { input: { imageId: image.id, text: text.trim() } } });
+        await addComment({
+          variables: { input: { imageId: image.id, text: text.trim() } },
+          refetchQueries,
+        });
       }
 
       setRating(0);
@@ -127,7 +139,7 @@ export function ImageDetailsPage() {
 
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[1.3fr,1fr]">
-      <Card className="overflow-hidden border-white/70">
+      <Card className="overflow-hidden border-white/70" data-section="image" data-image-id={image.id}>
         <div className="relative w-full overflow-hidden rounded-t-2xl bg-slate-100">
           <button
             type="button"
@@ -170,7 +182,7 @@ export function ImageDetailsPage() {
       </Card>
 
       <div className="space-y-4">
-        <Card className="border-white/70">
+        <Card className="border-white/70" data-section="comments" data-image-id={image.id}>
           <CardHeader>
             <CardTitle>{t("image_details.comments_title")}</CardTitle>
           </CardHeader>
@@ -178,10 +190,18 @@ export function ImageDetailsPage() {
             {imageComments.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("image_details.no_comments")}</p>
             ) : (
-              imageComments.map((comment) => (
+              imageComments.map((comment) => {
+                const isAdminStyle = isAdminStyleComment(comment);
+                const reviewLabel =
+                  isAdminStyle && comment.author?.role === "SUPER_ADMIN"
+                    ? ` ${t("image_details.super_admin_review")}`
+                    : isAdminStyle
+                      ? ` ${t("image_details.admin_review")}`
+                      : "";
+                return (
                 <div
                   className={`rounded-2xl border p-3 ${
-                    comment.isAdminReview ? "border-amber-200 bg-amber-50/70" : "border-border bg-white"
+                    isAdminStyle ? "border-amber-200 bg-amber-50/70" : "border-border bg-white"
                   }`}
                   key={comment.id}
                 >
@@ -194,7 +214,7 @@ export function ImageDetailsPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-800">
                         {comment.author?.visibleName ?? comment.author?.realName ?? t("image_details.deleted_user")}
-                        {comment.isAdminReview ? ` ${t("image_details.admin_review")}` : ""}
+                        {reviewLabel}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDateFa(comment.createdAt)} | {formatTimeFa(comment.createdAt)}
@@ -204,12 +224,13 @@ export function ImageDetailsPage() {
 
                   <p className="text-sm leading-6 text-slate-700">{comment.text}</p>
                 </div>
-              ))
+              );
+              })
             )}
           </CardContent>
         </Card>
 
-        <Card className="border-white/70">
+        <Card className="border-white/70" data-section="rate-comment" data-image-id={image.id}>
           <CardHeader>
             <CardTitle>{t("image_details.rate_comment_title")}</CardTitle>
             <CardDescription>

@@ -61,7 +61,19 @@ export function ImageUploadModal({ open, onOpenChange, onComplete }: ImageUpload
 
   const processFile = useCallback(
     async (file: File): Promise<FileEntry | null> => {
-      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return null;
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        const id = crypto.randomUUID();
+        const sizeErrorEntry: FileEntry = {
+          id,
+          file,
+          url: "",
+          status: "error",
+          progress: 0,
+          error: t("upload.file_too_large"),
+        };
+        setFiles((prev) => [...prev, sizeErrorEntry].slice(-MAX_FILES));
+        return null;
+      }
       if (!file.type.startsWith("image/")) return null;
 
       const id = crypto.randomUUID();

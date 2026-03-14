@@ -34,7 +34,7 @@ export function StreamsPage() {
             <button
               key={festival.id}
               type="button"
-              onClick={() => navigate(`/streams/${festival.id}`)}
+              onClick={() => navigate(`/streams/${festival.slug}`)}
               className="group w-full text-right"
             >
               <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/60">
@@ -56,7 +56,7 @@ export function StreamsPage() {
                 <div className="space-y-3 p-4">
                   <h3 className="text-base font-bold text-slate-800 leading-relaxed">{festival.name}</h3>
 
-                  <p className="text-xs leading-5 text-muted-foreground line-clamp-2">
+                  <p className="text-justify text-xs leading-5 text-muted-foreground line-clamp-2">
                     {festival.conceptText || t("streams.images_in_stream", { count: festival.imageCount })}
                   </p>
 

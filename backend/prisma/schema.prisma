@@ -69,6 +69,7 @@ model User {
 
 model Festival {
   id               String           @id @default(uuid())
+  slug             String           @unique
   name             String
   coverImageUrl    String?
   conceptMediaType ConceptMediaType @default(IMAGE)
@@ -87,6 +88,7 @@ model Festival {
 
 model Image {
   id         String  @id @default(uuid())
+  slug       String  @unique
   url        String
   title      String?
   isTopImage Boolean @default(false)
@@ -152,6 +154,9 @@ model Notification {
 
   senderId String?
   sender   User?  @relation("SenderNotifications", fields: [senderId], references: [id], onDelete: SetNull)
+
+  imageId String?
+  festivalId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

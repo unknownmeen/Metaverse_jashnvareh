@@ -23,6 +23,9 @@ export async function uploadFile(file: File, folder: string = "images"): Promise
 
   if (!res.ok) {
     const text = await res.text();
+    if (res.status === 413) {
+      throw new Error("حجم فایل بیش از حد مجاز است. حداکثر حجم مجاز ۱۰ مگابایت می‌باشد.");
+    }
     throw new Error(text || `Upload failed: ${res.status}`);
   }
 

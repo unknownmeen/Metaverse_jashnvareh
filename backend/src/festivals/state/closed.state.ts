@@ -3,16 +3,16 @@ import { IFestivalState } from './festival-state.interface';
 
 /**
  * CLOSED state: The festival is finished. No more submissions.
- * Terminal state — no valid transitions.
+ * Valid transition: CLOSED -> OPEN (admin can reopen)
  */
 export class ClosedState implements IFestivalState {
   readonly status = FestivalStatus.CLOSED;
 
   allowedTransitions(): FestivalStatus[] {
-    return [];
+    return [FestivalStatus.OPEN];
   }
 
-  canTransitionTo(_target: FestivalStatus): boolean {
-    return false;
+  canTransitionTo(target: FestivalStatus): boolean {
+    return target === FestivalStatus.OPEN;
   }
 }

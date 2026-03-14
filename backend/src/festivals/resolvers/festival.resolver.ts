@@ -25,8 +25,8 @@ export class FestivalResolver {
 
   @Query(() => FestivalModel, { name: 'festival' })
   @UseGuards(GqlAuthGuard)
-  async festival(@Args('id', { type: () => ID }) id: string) {
-    return this.festivalReadService.findById(id);
+  async festival(@Args('idOrSlug', { type: () => String }) idOrSlug: string) {
+    return this.festivalReadService.findByIdOrSlug(idOrSlug);
   }
 
   @Mutation(() => FestivalModel)

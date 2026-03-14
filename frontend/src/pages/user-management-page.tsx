@@ -33,15 +33,17 @@ import {
   DELETE_USERS_MUTATION,
 } from "@/graphql/operations";
 import type { User } from "@/types/models";
-import type { UserRole } from "@/types/models";
+import type { UserRole, Gender } from "@/types/models";
 
 const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "JUDGE", "USER"];
+const GENDERS: Gender[] = ["MALE", "FEMALE"];
 
 interface NewUserRow {
   id: string;
   phone: string;
   password: string;
   role: UserRole;
+  gender: Gender;
   realName: string;
   displayName: string;
 }
@@ -64,6 +66,31 @@ function RoleSelect({
         {ROLES.map((r) => (
           <SelectItem key={r} value={r}>
             {t(`role.${r.toLowerCase()}`)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function GenderSelect({
+  value,
+  onValueChange,
+  className,
+}: {
+  value: Gender;
+  onValueChange: (v: Gender) => void;
+  className?: string;
+}) {
+  return (
+    <Select value={value} onValueChange={(v) => onValueChange(v as Gender)}>
+      <SelectTrigger className={className}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {GENDERS.map((g) => (
+          <SelectItem key={g} value={g}>
+            {t(`gender.${g.toLowerCase()}`)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -115,7 +142,7 @@ export function UserManagementPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addModalError, setAddModalError] = useState<string | null>(null);
   const [newRows, setNewRows] = useState<NewUserRow[]>([
-    { id: crypto.randomUUID(), phone: "", password: "", role: "USER", realName: "", displayName: "" },
+    { id: crypto.randomUUID(), phone: "", password: "", role: "USER", gender: "MALE", realName: "", displayName: "" },
   ]);
   const [editPhoneUser, setEditPhoneUser] = useState<User | null>(null);
   const [editPhoneValue, setEditPhoneValue] = useState("");
@@ -152,7 +179,7 @@ export function UserManagementPage() {
   const addNewRow = () => {
     setNewRows((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), phone: "", password: "", role: "USER", realName: "", displayName: "" },
+      { id: crypto.randomUUID(), phone: "", password: "", role: "USER", gender: "MALE", realName: "", displayName: "" },
     ]);
   };
 
@@ -160,7 +187,7 @@ export function UserManagementPage() {
     setNewRows((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const updateNewRow = (id: string, field: keyof NewUserRow, value: string | UserRole) => {
+  const updateNewRow = (id: string, field: keyof NewUserRow, value: string | UserRole | Gender) => {
     setAddModalError(null);
     setNewRows((prev) =>
       prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
@@ -169,6 +196,13 @@ export function UserManagementPage() {
 
   const handleAddUsers = async (e: FormEvent) => {
     e.preventDefault();
+    const femaleWithoutDisplayName = newRows.some(
+      (r) => r.gender === "FEMALE" && !r.displayName?.trim()
+    );
+    if (femaleWithoutDisplayName) {
+      setAddModalError(t("user_management.display_name_required"));
+      return;
+    }
     const valid = newRows.filter((r) => {
       const phoneClean = toEnglishDigits(r.phone).replace(/\D/g, "");
       return phoneClean.length >= 10 && toEnglishDigits(r.password).length >= 6;
@@ -185,15 +219,16 @@ export function UserManagementPage() {
             phone: toEnglishDigits(r.phone).replace(/\D/g, ""),
             password: toEnglishDigits(r.password),
             role: r.role,
+            gender: r.gender,
             realName: r.realName.trim() || undefined,
-            displayName: r.displayName.trim() || undefined,
+            displayName: r.gender === "FEMALE" ? r.displayName.trim() || undefined : undefined,
           })),
         },
       });
       setMessage({ type: "success", text: t("user_management.success") });
       setAddModalOpen(false);
       setAddModalError(null);
-      setNewRows([{ id: crypto.randomUUID(), phone: "", password: "", role: "USER", realName: "", displayName: "" }]);
+      setNewRows([{ id: crypto.randomUUID(), phone: "", password: "", role: "USER", gender: "MALE", realName: "", displayName: "" }]);
       setTimeout(() => setMessage(null), 3000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t("user_management.error");
@@ -501,14 +536,25 @@ export function UserManagementPage() {
                       className="h-11"
                     />
                   </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-600">
-                      {t("user_management.role")}
-                    </label>
-                    <RoleSelect
-                      value={row.role}
-                      onValueChange={(v) => updateNewRow(row.id, "role", v)}
-                    />
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-600">
+                        {t("user_management.role")}
+                      </label>
+                      <RoleSelect
+                        value={row.role}
+                        onValueChange={(v) => updateNewRow(row.id, "role", v)}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-slate-600">
+                        {t("user_management.gender")}
+                      </label>
+                      <GenderSelect
+                        value={row.gender}
+                        onValueChange={(v) => updateNewRow(row.id, "gender", v)}
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
@@ -522,16 +568,18 @@ export function UserManagementPage() {
                         className="h-11"
                       />
                     </div>
+                    {row.gender === "FEMALE" && (
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <label className="mb-2 block text-sm font-medium text-slate-600">
-                          {t("user_management.display_name")}
+                          {t("user_management.display_name")} *
                         </label>
                         <Input
                           value={row.displayName}
                           onChange={(e) => updateNewRow(row.id, "displayName", e.target.value)}
                           placeholder={t("user_management.display_name_placeholder")}
                           className="h-11"
+                          required
                         />
                       </div>
                       {newRows.length > 1 && (
@@ -548,6 +596,7 @@ export function UserManagementPage() {
                         </div>
                       )}
                     </div>
+                    )}
                   </div>
                 </div>
               </div>

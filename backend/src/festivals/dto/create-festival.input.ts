@@ -1,6 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ConceptMediaType } from '@prisma/client';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ConceptMediaType, FestivalStatus } from '@prisma/client';
 
 @InputType()
 export class CreateFestivalInput {
@@ -13,6 +13,11 @@ export class CreateFestivalInput {
   @IsOptional()
   @IsString()
   coverImageUrl?: string;
+
+  @Field(() => String, { nullable: true, defaultValue: 'UNOPENED' })
+  @IsOptional()
+  @IsEnum(FestivalStatus)
+  status?: FestivalStatus;
 
   @Field(() => String, { nullable: true, defaultValue: 'IMAGE' })
   @IsOptional()

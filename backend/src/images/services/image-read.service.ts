@@ -14,6 +14,17 @@ export class ImageReadService {
     return image;
   }
 
+  async findByIdOrSlug(idOrSlug: string): Promise<Image> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const image = isUuid
+      ? await this.imageRepository.findById(idOrSlug)
+      : await this.imageRepository.findBySlug(idOrSlug);
+    if (!image) {
+      throw new NotFoundException('تصویر یافت نشد');
+    }
+    return image;
+  }
+
   async findByIdWithRelations(id: string) {
     const image = await this.imageRepository.findByIdWithRelations(id);
     if (!image) {

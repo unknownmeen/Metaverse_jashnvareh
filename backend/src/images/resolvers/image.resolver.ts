@@ -13,11 +13,13 @@ import {
 import { UseGuards } from '@nestjs/common';
 import { Role, User } from '@prisma/client';
 import { ImageModel } from '../models/image.model';
+import { FestivalModel } from '../../festivals/models/festival.model';
 import { UserModel } from '../../users/models/user.model';
 import { ImageReadService } from '../services/image-read.service';
 import { ImageWriteService } from '../services/image-write.service';
 import { RatingReadService } from '../../ratings/services/rating-read.service';
 import { UserReadService } from '../../users/services/user-read.service';
+import { FestivalReadService } from '../../festivals/services/festival-read.service';
 import { UploadImageInput } from '../dto/upload-image.input';
 import { GqlAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser, Roles } from '../../common/decorators';
@@ -29,12 +31,13 @@ export class ImageResolver {
     private readonly imageWriteService: ImageWriteService,
     private readonly ratingReadService: RatingReadService,
     private readonly userReadService: UserReadService,
+    private readonly festivalReadService: FestivalReadService,
   ) {}
 
   @Query(() => ImageModel, { name: 'image' })
   @UseGuards(GqlAuthGuard)
-  async image(@Args('id', { type: () => ID }) id: string) {
-    return this.imageReadService.findById(id);
+  async image(@Args('idOrSlug', { type: () => String }) idOrSlug: string) {
+    return this.imageReadService.findByIdOrSlug(idOrSlug);
   }
 
   @Query(() => [ImageModel], { name: 'festivalImages' })
@@ -84,5 +87,10 @@ export class ImageResolver {
   @ResolveField('commentCount', () => Int)
   async resolveCommentCount(@Parent() image: { id: string }): Promise<number> {
     return this.imageReadService.getCommentCount(image.id);
+  }
+
+  @ResolveField('festival', () => FestivalModel, { nullable: true })
+  async resolveFestival(@Parent() image: { festivalId: string }) {
+    return this.festivalReadService.findById(image.festivalId);
   }
 }

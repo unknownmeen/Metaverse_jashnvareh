@@ -25,6 +25,7 @@ export class NotificationListener {
       type: NotificationType.TOP_IMAGE,
       text: `تصویر شما «${event.imageTitle}» به عنوان منتخب ادمین انتخاب شد.`,
       userId: event.imageOwnerId,
+      imageId: event.imageId,
     });
   }
 
@@ -44,6 +45,7 @@ export class NotificationListener {
       text: `برای تصویر شما یک نظر جدید ثبت شد.`,
       userId: payload.imageOwnerId,
       senderId: payload.commenterId,
+      imageId: payload.imageId,
     });
   }
 
@@ -62,6 +64,7 @@ export class NotificationListener {
       text: `برای تصویر شما امتیاز ${payload.score} از ۵ ثبت شد.`,
       userId: payload.imageOwnerId,
       senderId: payload.raterId,
+      imageId: payload.imageId,
     });
   }
 
@@ -79,6 +82,7 @@ export class NotificationListener {
       text: `نقد جدیدی توسط ادمین برای تصویر شما ثبت شد.`,
       userId: payload.imageOwnerId,
       senderId: payload.reviewerId,
+      imageId: payload.imageId,
     });
   }
 }

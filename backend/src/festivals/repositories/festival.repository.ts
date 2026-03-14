@@ -10,6 +10,10 @@ export class FestivalRepository {
     return this.prisma.festival.findUnique({ where: { id } });
   }
 
+  async findBySlug(slug: string): Promise<Festival | null> {
+    return this.prisma.festival.findUnique({ where: { slug } });
+  }
+
   async findMany(args?: Prisma.FestivalFindManyArgs): Promise<Festival[]> {
     return this.prisma.festival.findMany(args);
   }

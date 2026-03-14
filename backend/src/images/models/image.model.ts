@@ -8,6 +8,9 @@ export class ImageModel {
   id: string;
 
   @Field()
+  slug: string;
+
+  @Field()
   url: string;
 
   @Field({ nullable: true })

@@ -17,7 +17,7 @@ export function ImageCard({ image, subtitle }: ImageCardProps) {
 
   return (
     <Link
-      to={`/images/${image.id}`}
+      to={`/images/${image.slug}`}
       className="group block h-full w-full text-right outline-none focus:outline-none focus:ring-0"
     >
       <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/60 hover:border-slate-100">

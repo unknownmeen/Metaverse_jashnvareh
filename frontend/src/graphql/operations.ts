@@ -19,6 +19,7 @@ export const USER_FRAGMENT = gql`
 export const FESTIVAL_FRAGMENT = gql`
   fragment FestivalFields on Festival {
     id
+    slug
     name
     coverImageUrl
     conceptMediaType
@@ -35,6 +36,7 @@ export const FESTIVAL_FRAGMENT = gql`
 export const IMAGE_FRAGMENT = gql`
   fragment ImageFields on Image {
     id
+    slug
     url
     title
     isTopImage
@@ -46,6 +48,11 @@ export const IMAGE_FRAGMENT = gql`
     createdAt
     author {
       ...UserFields
+    }
+    festival {
+      id
+      slug
+      name
     }
   }
   ${USER_FRAGMENT}
@@ -74,6 +81,10 @@ export const NOTIFICATION_FRAGMENT = gql`
     isRead
     userId
     senderId
+    imageId
+    imageSlug
+    festivalId
+    festivalSlug
     createdAt
   }
 `;
@@ -168,8 +179,8 @@ export const GET_FESTIVALS_QUERY = gql`
 `;
 
 export const GET_FESTIVAL_QUERY = gql`
-  query GetFestival($id: ID!) {
-    festival(id: $id) {
+  query GetFestival($idOrSlug: String!) {
+    festival(idOrSlug: $idOrSlug) {
       ...FestivalFields
     }
   }
@@ -230,8 +241,8 @@ export const GET_MY_IMAGES_QUERY = gql`
 `;
 
 export const GET_IMAGE_QUERY = gql`
-  query GetImage($id: ID!) {
-    image(id: $id) {
+  query GetImage($idOrSlug: String!) {
+    image(idOrSlug: $idOrSlug) {
       ...ImageFields
     }
   }

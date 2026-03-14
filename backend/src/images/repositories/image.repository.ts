@@ -10,6 +10,10 @@ export class ImageRepository {
     return this.prisma.image.findUnique({ where: { id } });
   }
 
+  async findBySlug(slug: string): Promise<Image | null> {
+    return this.prisma.image.findUnique({ where: { slug } });
+  }
+
   async findByIdWithRelations(id: string) {
     return this.prisma.image.findUnique({
       where: { id },

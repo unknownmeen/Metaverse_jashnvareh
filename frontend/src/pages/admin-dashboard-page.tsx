@@ -75,7 +75,7 @@ export function AdminDashboardPage() {
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/admin/streams/${festival.id}/edit`);
+                        navigate(`/admin/streams/${festival.slug}/edit`);
                       }}
                       size="icon"
                       variant="ghost"
@@ -116,14 +116,14 @@ export function AdminDashboardPage() {
                 <StreamStatusBadge size="sm" status={festival.status} />
                 <h3 className="text-base font-bold leading-relaxed text-slate-800">{festival.name}</h3>
 
-                <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                <p className="line-clamp-2 text-justify text-xs leading-5 text-muted-foreground">
                   {festival.conceptText || t("admin.images_fallback", { count: festival.imageCount })}
                 </p>
 
                 <div className="flex items-center gap-1 border-t border-slate-100 pt-3 text-sm font-semibold text-primary-500 transition-colors group-hover:text-primary-600">
                   <button
                     type="button"
-                    onClick={() => navigate(`/streams/${festival.id}`)}
+                    onClick={() => navigate(`/streams/${festival.slug}`)}
                     className="flex items-center gap-1"
                   >
                     {t("admin.view_stream")}

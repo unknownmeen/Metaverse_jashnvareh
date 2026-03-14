@@ -2,7 +2,9 @@
   "nav": {
     "breadcrumb_stream": "جریان",
     "breadcrumb_edit_stream": "ویرایش جریان",
+    "breadcrumb_edit_stream_with_name": "ویرایش جریان {{name}}",
     "breadcrumb_image": "جزئیات تصویر",
+    "breadcrumb_image_with_title": "جزئیات عکس {{title}}",
     "home": "خانه",
     "streams": "جریان ها",
     "admin_view": "نمای ادمین",
@@ -115,6 +117,7 @@
     "save_changes": "ذخیره تغییرات",
     "logout": "خروج",
     "name_required": "نام واقعی نمی تواند خالی باشد.",
+    "display_name_required": "نام نمایشی الزامی است.",
     "save_error": "خطا در ذخیره تغییرات"
   },
   "image_details": {
@@ -131,6 +134,7 @@
     "user": "کاربر",
     "deleted_user": "کاربر حذف شده",
     "admin_review": "(نقد رسمی ادمین)",
+    "super_admin_review": "(نقد رسمی سوپر ادمین)",
     "rate_comment_title": "ثبت نظر و امتیاز",
     "avg_rating": "میانگین امتیاز",
     "of_5": "از ۵",
@@ -143,9 +147,11 @@
   },
   "stream_explore": {
     "upload_new": "ارسال تصویر جدید",
+    "upload_error": "خطا در ارسال تصویر. لطفاً دوباره تلاش کنید.",
     "not_found": "این جریان پیدا نشد.",
     "concept_alt": "کانسپت",
     "concept_empty": "تصویر یا ویدیو مفهوم ثبت نشده است.",
+    "concept_fullscreen": "نمایش تمام‌صفحه",
     "rules_title": "قواعد فرم",
     "rules_empty": "قوانین این جشنواره ثبت نشده است.",
     "judge_readonly": "حساب داور فقط امکان مشاهده دارد و ارسال تصویر غیرفعال است.",
@@ -169,6 +175,10 @@
     "open": "باز",
     "closed": "پایان یافته",
     "unopened": "هنوز باز نشده"
+  },
+  "upload": {
+    "file_too_large": "حجم فایل بیش از حد مجاز است. حداکثر حجم مجاز ۱۰ مگابایت می‌باشد.",
+    "file_too_large_title": "فایل بیش از حد مجاز"
   },
   "image_upload": {
     "create_title": "ایجاد تصویر جدید",
@@ -241,8 +251,9 @@
     "role": "نقش",
     "real_name": "نام و نام خانوادگی (اختیاری)",
     "real_name_placeholder": "نام واقعی",
-    "display_name": "نام نمایشی (اختیاری)",
+    "display_name": "نام نمایشی",
     "display_name_placeholder": "نام نمایشی",
+    "display_name_required": "برای کاربران خانم، نام نمایشی الزامی است.",
     "save": "ذخیره",
     "cancel": "انصراف",
     "delete": "حذف",

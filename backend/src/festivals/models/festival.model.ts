@@ -11,6 +11,9 @@ export class FestivalModel {
   id: string;
 
   @Field()
+  slug: string;
+
+  @Field()
   name: string;
 
   @Field({ nullable: true })

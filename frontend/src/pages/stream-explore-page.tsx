@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Maximize2, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 
 import { useAppStore } from "@/app/store";
+import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageCard } from "@/features/streams/image-card";
 import { CreateImageModal } from "@/features/streams/create-image-modal";
@@ -40,22 +42,30 @@ export function StreamExplorePage() {
 
   const [filter, setFilter] = useState<"featured" | "newest" | "oldest" | "top_rated">("newest");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [conceptFullscreenOpen, setConceptFullscreenOpen] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   const { data: festivalData, loading: festivalLoading } = useQuery<{ festival: Festival }>(GET_FESTIVAL_QUERY, {
-    variables: { id: streamId },
+    variables: { idOrSlug: streamId },
     skip: !streamId,
-  });
-
-  const { data: imagesData, loading: imagesLoading } = useQuery<{ festivalImages: ImageItem[] }>(GET_FESTIVAL_IMAGES_QUERY, {
-    variables: { festivalId: streamId },
-    skip: !streamId,
-  });
-
-  const [uploadImage] = useMutation<{ uploadImage: { id: string } }>(UPLOAD_IMAGE_MUTATION, {
-    refetchQueries: [{ query: GET_FESTIVAL_IMAGES_QUERY, variables: { festivalId: streamId } }],
   });
 
   const festival = festivalData?.festival;
+
+  const { data: imagesData, loading: imagesLoading } = useQuery<{ festivalImages: ImageItem[] }>(GET_FESTIVAL_IMAGES_QUERY, {
+    variables: { festivalId: festival?.id ?? streamId },
+    skip: !festival?.id,
+  });
+
+  const [uploadImage] = useMutation<{ uploadImage: { id: string } }>(UPLOAD_IMAGE_MUTATION);
+
+  // ریدایرکت از UUID به slug فارسی در آدرس
+  const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  useEffect(() => {
+    if (festival?.slug && streamId && isUuid(streamId) && streamId !== festival.slug) {
+      navigate(`/streams/${festival.slug}`, { replace: true });
+    }
+  }, [festival?.slug, streamId, navigate]);
   const streamImages = imagesData?.festivalImages ?? [];
 
   if (festivalLoading || imagesLoading) {
@@ -94,16 +104,21 @@ export function StreamExplorePage() {
   const canUpload = festival.status === "OPEN" && currentUser.role !== "JUDGE";
 
   const handleUploadComplete = async (url: string, title: string, _description: string) => {
+    setUploadError("");
     try {
       const { data } = await uploadImage({
         variables: { input: { festivalId: festival.id, url, title } },
+        refetchQueries: [{ query: GET_FESTIVAL_IMAGES_QUERY, variables: { festivalId: festival.id } }],
+        awaitRefetchQueries: true,
       });
       setDialogOpen(false);
       if (data?.uploadImage?.id) {
-        navigate(`/images/${data.uploadImage.id}`);
+        const img = data.uploadImage as ImageItem;
+        navigate(`/images/${img.slug ?? img.id}`);
       }
-    } catch {
+    } catch (err: unknown) {
       setDialogOpen(false);
+      setUploadError(err instanceof Error ? err.message : t("stream_explore.upload_error"));
     }
   };
 
@@ -124,11 +139,21 @@ export function StreamExplorePage() {
               <StreamStatusBadge status={festival.status} />
             </div>
 
-            <CardDescription>{festival.conceptText}</CardDescription>
+            <CardDescription className="text-justify">{festival.conceptText}</CardDescription>
 
-            <div className="overflow-hidden rounded-2xl border border-border bg-primary-50">
-              <div className="border-b border-primary-100 px-3 py-1.5">
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-primary-50">
+              <div className="flex items-center justify-between border-b border-primary-100 px-3 py-1.5">
                 <span className="text-xs font-semibold text-primary-600">{t("stream_explore.concept_alt")}</span>
+                {festival.conceptMediaUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setConceptFullscreenOpen(true)}
+                    className="flex items-center gap-1 rounded-md p-1.5 text-primary-600 transition-colors hover:bg-primary-100 hover:text-primary-700"
+                    title={t("stream_explore.concept_fullscreen")}
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
               {festival.conceptMediaUrl ? (
                 festival.conceptMediaType === "VIDEO" ? (
@@ -143,9 +168,31 @@ export function StreamExplorePage() {
               )}
             </div>
 
+            <Dialog onOpenChange={setConceptFullscreenOpen} open={conceptFullscreenOpen}>
+              <DialogContent className="max-h-[95vh] max-w-[95vw] border-0 bg-black/95 p-0 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:hover:text-white">
+                <div className="flex h-[85vh] w-full items-center justify-center p-4">
+                  {festival.conceptMediaUrl &&
+                    (festival.conceptMediaType === "VIDEO" ? (
+                      <video
+                        className="max-h-full max-w-full object-contain"
+                        controls
+                        autoPlay
+                        src={resolveMediaUrl(festival.conceptMediaUrl)}
+                      />
+                    ) : (
+                      <img
+                        alt={t("stream_explore.concept_alt")}
+                        className="max-h-full max-w-full object-contain"
+                        src={resolveMediaUrl(festival.conceptMediaUrl)}
+                      />
+                    ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <div className="rounded-2xl bg-primary-50/80 p-3 text-sm leading-6 text-muted-foreground">
               <h3 className="mb-1 font-semibold text-slate-700">{t("stream_explore.rules_title")}</h3>
-              <p>{festival.rulesText?.trim() || t("stream_explore.rules_empty")}</p>
+              <p className="text-justify">{festival.rulesText?.trim() || t("stream_explore.rules_empty")}</p>
             </div>
 
             {festival.status === "OPEN" && currentUser.role === "JUDGE" ? (
@@ -157,7 +204,7 @@ export function StreamExplorePage() {
         </div>
       </Card>
 
-      <Card className="border-white/70">
+      <Card className="border-white/70" data-section="featured" data-festival-id={festival.id}>
         <CardHeader>
           <CardTitle>{t("stream_explore.featured_gallery")}</CardTitle>
           <CardDescription>{t("stream_explore.featured_desc")}</CardDescription>
@@ -176,7 +223,7 @@ export function StreamExplorePage() {
         </CardContent>
       </Card>
 
-      <Card className="border-white/70">
+      <Card className="border-white/70" data-section="images" data-festival-id={festival.id}>
         <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle>{t("stream_explore.explore_all")}</CardTitle>
@@ -212,8 +259,9 @@ export function StreamExplorePage() {
         </CardContent>
       </Card>
 
+      {uploadError ? <Alert variant="error">{uploadError}</Alert> : null}
       <CreateImageModal
-        onClose={() => setDialogOpen(false)}
+        onClose={() => { setDialogOpen(false); setUploadError(""); }}
         onComplete={handleUploadComplete}
         open={dialogOpen}
         streamName={festival.name}

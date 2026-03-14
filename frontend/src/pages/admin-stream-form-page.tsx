@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Upload } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Loader2, Upload } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 
 import { Alert } from "@/components/ui/alert";
@@ -21,6 +21,8 @@ interface FormState {
   rulesText: string;
   status: FestivalStatus;
 }
+
+const MAX_FILE_SIZE_MB = 10;
 
 const defaultForm: FormState = {
   name: "",
@@ -63,6 +65,11 @@ function UploadCard({
     const isImage = file.type.startsWith("image/");
     const isVideo = acceptVideo && file.type.startsWith("video/");
     if (!isImage && !isVideo) return;
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setUploadError(t("upload.file_too_large"));
+      return;
+    }
 
     setUploadError("");
     setUploading(true);
@@ -138,7 +145,7 @@ export function AdminStreamFormPage() {
   const { streamId } = useParams();
 
   const { data: festivalData, loading: loadingFestival } = useQuery<{ festival: Festival }>(GET_FESTIVAL_QUERY, {
-    variables: { id: streamId },
+    variables: { idOrSlug: streamId },
     skip: !streamId,
   });
 
@@ -170,7 +177,7 @@ export function AdminStreamFormPage() {
   });
 
   const [updateFestival, { loading: updatingFestival }] = useMutation(UPDATE_FESTIVAL_MUTATION, {
-    refetchQueries: [{ query: GET_FESTIVALS_QUERY }, { query: GET_FESTIVAL_QUERY, variables: { id: streamId } }],
+    refetchQueries: [{ query: GET_FESTIVALS_QUERY }, { query: GET_FESTIVAL_QUERY, variables: { idOrSlug: streamId } }],
   });
 
   const [updateStatus, { loading: updatingStatus }] = useMutation(UPDATE_FESTIVAL_STATUS_MUTATION);
@@ -182,7 +189,7 @@ export function AdminStreamFormPage() {
       setError(t("admin_form.name_cover_required"));
       return;
     }
-    if (isEditMode && !form.status) {
+    if (!form.status) {
       setError(t("admin_form.status_required"));
       return;
     }
@@ -219,6 +226,7 @@ export function AdminStreamFormPage() {
               conceptMediaUrl: form.conceptMediaUrl || undefined,
               conceptText: form.conceptText || undefined,
               rulesText: form.rulesText || undefined,
+              status: form.status,
             },
           },
         });
@@ -234,14 +242,6 @@ export function AdminStreamFormPage() {
 
   return (
     <div className="mx-auto max-w-2xl animate-fade-in px-4 py-5">
-      <Link
-        to="/admin"
-        className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition-colors hover:text-primary-600"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        {t("admin.back")}
-      </Link>
-
       <h1 className="mb-6 text-xl font-black text-slate-800">
         {isEditMode ? t("admin_form.edit_stream") : t("admin_form.create_festival")}
       </h1>
@@ -277,8 +277,7 @@ export function AdminStreamFormPage() {
               placeholder={t("admin_form.cover_placeholder")}
             />
 
-            {isEditMode && (
-              <div>
+            <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-400" htmlFor="status">
                   {t("admin_form.status_label")} *
                 </label>
@@ -294,7 +293,6 @@ export function AdminStreamFormPage() {
                   <option value="CLOSED">{t("admin_form.status_closed")}</option>
                 </select>
               </div>
-            )}
           </div>
         </div>
 
@@ -311,7 +309,7 @@ export function AdminStreamFormPage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, conceptText: e.target.value }))}
                 placeholder={t("admin_form.concept_placeholder")}
                 rows={4}
-                className="rounded-xl border-slate-200 bg-slate-50 focus:border-primary-300 focus:ring-primary-300"
+                className="rounded-xl border-slate-200 bg-slate-50 text-justify focus:border-primary-300 focus:ring-primary-300"
               />
             </div>
 
@@ -340,7 +338,7 @@ export function AdminStreamFormPage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, rulesText: e.target.value }))}
                 placeholder={t("admin_form.rules_placeholder")}
                 rows={4}
-                className="rounded-xl border-slate-200 bg-slate-50 focus:border-primary-300 focus:ring-primary-300"
+                className="rounded-xl border-slate-200 bg-slate-50 text-justify focus:border-primary-300 focus:ring-primary-300"
               />
             </div>
           </div>

@@ -22,6 +22,7 @@ export interface User {
 
 export interface Festival {
   id: string;
+  slug: string;
   name: string;
   coverImageUrl?: string | null;
   conceptMediaType: ConceptMediaType;
@@ -36,6 +37,7 @@ export interface Festival {
 
 export interface ImageItem {
   id: string;
+  slug: string;
   url: string;
   title?: string | null;
   isTopImage: boolean;
@@ -43,6 +45,7 @@ export interface ImageItem {
   festivalId: string;
   userId: string;
   author: User;
+  festival?: { id: string; slug: string; name: string } | null;
   averageRating?: number | null;
   commentCount: number;
   createdAt: string;
@@ -65,6 +68,10 @@ export interface NotificationItem {
   isRead: boolean;
   userId: string;
   senderId?: string | null;
+  imageId?: string | null;
+  imageSlug?: string | null;
+  festivalId?: string | null;
+  festivalSlug?: string | null;
   createdAt: string;
 }
 

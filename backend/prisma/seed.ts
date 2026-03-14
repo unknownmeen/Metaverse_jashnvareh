@@ -138,9 +138,10 @@ async function main() {
 
   const festival1 = await prisma.festival.upsert({
     where: { id: 'seed-fest-spring' },
-    update: {},
+    update: { slug: 'جشنواره-رنگهای-بهار' },
     create: {
       id: 'seed-fest-spring',
+      slug: 'جشنواره-رنگهای-بهار',
       name: 'جشنواره رنگ‌های بهار',
       coverImageUrl: 'https://picsum.photos/seed/spring/1200/600',
       conceptMediaType: ConceptMediaType.VIDEO,
@@ -153,9 +154,10 @@ async function main() {
 
   const festival2 = await prisma.festival.upsert({
     where: { id: 'seed-fest-city' },
-    update: {},
+    update: { slug: 'جشنواره-نور-و-شهر' },
     create: {
       id: 'seed-fest-city',
+      slug: 'جشنواره-نور-و-شهر',
       name: 'جشنواره نور و شهر',
       coverImageUrl: 'https://picsum.photos/seed/city/1200/600',
       conceptMediaType: ConceptMediaType.IMAGE,
@@ -168,9 +170,10 @@ async function main() {
 
   const festival3 = await prisma.festival.upsert({
     where: { id: 'seed-fest-sea' },
-    update: {},
+    update: { slug: 'جشنواره-زندگی-ساحلی' },
     create: {
       id: 'seed-fest-sea',
+      slug: 'جشنواره-زندگی-ساحلی',
       name: 'جشنواره زندگی ساحلی',
       coverImageUrl: 'https://picsum.photos/seed/sea/1200/600',
       conceptMediaType: ConceptMediaType.IMAGE,
@@ -187,9 +190,10 @@ async function main() {
 
   const image1 = await prisma.image.upsert({
     where: { id: 'seed-img-1' },
-    update: {},
+    update: { slug: 'کوچه-شکوفه‌ها' },
     create: {
       id: 'seed-img-1',
+      slug: 'کوچه-شکوفه‌ها',
       url: 'https://picsum.photos/seed/img1/800/600',
       title: 'کوچه شکوفه‌ها',
       isTopImage: false,
@@ -201,9 +205,10 @@ async function main() {
 
   const image2 = await prisma.image.upsert({
     where: { id: 'seed-img-2' },
-    update: {},
+    update: { slug: 'پنجره‌های-روشن' },
     create: {
       id: 'seed-img-2',
+      slug: 'پنجره‌های-روشن',
       url: 'https://picsum.photos/seed/img2/800/600',
       title: 'پنجره‌های روشن',
       isTopImage: true,
@@ -215,9 +220,10 @@ async function main() {
 
   const image3 = await prisma.image.upsert({
     where: { id: 'seed-img-3' },
-    update: {},
+    update: { slug: 'پل-مهتاب' },
     create: {
       id: 'seed-img-3',
+      slug: 'پل-مهتاب',
       url: 'https://picsum.photos/seed/img3/800/600',
       title: 'پل مهتاب',
       isTopImage: false,
@@ -229,9 +235,10 @@ async function main() {
 
   const image4 = await prisma.image.upsert({
     where: { id: 'seed-img-4' },
-    update: {},
+    update: { slug: 'طلوع-در-باغ' },
     create: {
       id: 'seed-img-4',
+      slug: 'طلوع-در-باغ',
       url: 'https://picsum.photos/seed/img4/800/600',
       title: 'طلوع در باغ',
       isTopImage: false,
@@ -243,9 +250,10 @@ async function main() {
 
   const image5 = await prisma.image.upsert({
     where: { id: 'seed-img-5' },
-    update: {},
+    update: { slug: 'خیابان-پرنور' },
     create: {
       id: 'seed-img-5',
+      slug: 'خیابان-پرنور',
       url: 'https://picsum.photos/seed/img5/800/600',
       title: 'خیابان پرنور',
       isTopImage: false,
@@ -371,7 +379,7 @@ async function main() {
 
   await prisma.notification.upsert({
     where: { id: 'seed-notif-1' },
-    update: {},
+    update: { imageId: image2.id, festivalId: image2.festivalId },
     create: {
       id: 'seed-notif-1',
       type: NotificationType.COMMENT,
@@ -379,12 +387,14 @@ async function main() {
       isRead: false,
       userId: user1.id,
       senderId: user7.id,
+      imageId: image2.id,
+      festivalId: image2.festivalId,
     },
   });
 
   await prisma.notification.upsert({
     where: { id: 'seed-notif-2' },
-    update: {},
+    update: { imageId: image2.id, festivalId: image2.festivalId },
     create: {
       id: 'seed-notif-2',
       type: NotificationType.TOP_IMAGE,
@@ -392,6 +402,8 @@ async function main() {
       isRead: false,
       userId: user1.id,
       senderId: user2.id,
+      imageId: image2.id,
+      festivalId: image2.festivalId,
     },
   });
 
@@ -409,7 +421,7 @@ async function main() {
 
   await prisma.notification.upsert({
     where: { id: 'seed-notif-4' },
-    update: {},
+    update: { imageId: image3.id, festivalId: image3.festivalId },
     create: {
       id: 'seed-notif-4',
       type: NotificationType.RATING,
@@ -417,12 +429,14 @@ async function main() {
       isRead: false,
       userId: user7.id,
       senderId: user5.id,
+      imageId: image3.id,
+      festivalId: image3.festivalId,
     },
   });
 
   await prisma.notification.upsert({
     where: { id: 'seed-notif-5' },
-    update: {},
+    update: { imageId: image4.id, festivalId: image4.festivalId },
     create: {
       id: 'seed-notif-5',
       type: NotificationType.COMMENT,
@@ -430,6 +444,8 @@ async function main() {
       isRead: true,
       userId: user6.id,
       senderId: user5.id,
+      imageId: image4.id,
+      festivalId: image4.festivalId,
     },
   });
 
