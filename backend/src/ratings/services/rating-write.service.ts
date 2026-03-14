@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Rating, User } from '@prisma/client';
 import { RatingRepository } from '../repositories/rating.repository';
@@ -17,6 +17,9 @@ export class RatingWriteService {
     const image = await this.imageRepository.findById(input.imageId);
     if (!image) {
       throw new NotFoundException('تصویر یافت نشد');
+    }
+    if (image.userId === user.id) {
+      throw new ForbiddenException('کاربر نمی‌تواند به اثر خودش امتیاز بدهد');
     }
 
     const rating = await this.ratingRepository.upsert(input.imageId, user.id, input.score);

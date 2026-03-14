@@ -242,6 +242,10 @@ export function ImageDetailsPage() {
               <p className="rounded-2xl bg-amber-50 px-3 py-2 text-sm text-amber-700">
                 {t("image_details.judge_readonly")}
               </p>
+            ) : image.userId === currentUser.id ? (
+              <p className="rounded-2xl bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                {t("image_details.cannot_comment_own_work")}
+              </p>
             ) : (
               <form className="space-y-3" onSubmit={handleSubmit} noValidate>
                 <StarRating onChange={setRating} value={rating} />

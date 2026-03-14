@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Comment, Role, User } from '@prisma/client';
 import { CommentRepository } from '../repositories/comment.repository';
@@ -17,6 +17,9 @@ export class CommentWriteService {
     const image = await this.imageRepository.findById(input.imageId);
     if (!image) {
       throw new NotFoundException('تصویر یافت نشد');
+    }
+    if (image.userId === user.id) {
+      throw new ForbiddenException('کاربر نمی‌تواند روی اثر خودش نظر بگذارد');
     }
 
     const comment = await this.commentRepository.create({
@@ -43,6 +46,9 @@ export class CommentWriteService {
     const image = await this.imageRepository.findById(input.imageId);
     if (!image) {
       throw new NotFoundException('تصویر یافت نشد');
+    }
+    if (image.userId === user.id) {
+      throw new ForbiddenException('کاربر نمی‌تواند روی اثر خودش نظر بگذارد');
     }
 
     const comment = await this.commentRepository.create({
