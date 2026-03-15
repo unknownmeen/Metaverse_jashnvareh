@@ -12,6 +12,7 @@ import { ImageCard } from "@/features/streams/image-card";
 import { CreateImageModal } from "@/features/streams/create-image-modal";
 import { StreamStatusBadge } from "@/features/streams/stream-status-badge";
 import { t } from "@/lib/i18n";
+import { isJudgeRole } from "@/lib/roles";
 import { resolveMediaUrl } from "@/lib/upload";
 import { GET_FESTIVAL_QUERY, GET_FESTIVAL_IMAGES_QUERY, UPLOAD_IMAGE_MUTATION } from "@/graphql/operations";
 import type { Festival, ImageItem } from "@/types/models";
@@ -101,13 +102,13 @@ export function StreamExplorePage() {
     return list;
   })();
 
-  const canUpload = festival.status === "OPEN" && currentUser.role !== "JUDGE";
+  const canUpload = festival.status === "OPEN" && !isJudgeRole(currentUser.role);
 
-  const handleUploadComplete = async (url: string, title: string, _description: string) => {
+  const handleUploadComplete = async (urls: string[], title: string, _description: string, coverIndex: number) => {
     setUploadError("");
     try {
       const { data } = await uploadImage({
-        variables: { input: { festivalId: festival.id, url, title } },
+        variables: { input: { festivalId: festival.id, urls, title, coverIndex } },
         refetchQueries: [{ query: GET_FESTIVAL_IMAGES_QUERY, variables: { festivalId: festival.id } }],
         awaitRefetchQueries: true,
       });
@@ -195,7 +196,7 @@ export function StreamExplorePage() {
               <p className="text-justify">{festival.rulesText?.trim() || t("stream_explore.rules_empty")}</p>
             </div>
 
-            {festival.status === "OPEN" && currentUser.role === "JUDGE" ? (
+            {festival.status === "OPEN" && isJudgeRole(currentUser.role) ? (
               <p className="rounded-2xl bg-amber-50 px-3 py-2 text-sm text-amber-700">
                 {t("stream_explore.judge_readonly")}
               </p>

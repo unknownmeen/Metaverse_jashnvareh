@@ -28,6 +28,9 @@ type Comment {
   id: ID!
   imageId: String!
   isAdminReview: Boolean!
+  isJudgeReview: Boolean!
+  ratingMaxScore: Float
+  ratingScore: Float
   text: String!
   userId: String!
 }
@@ -67,6 +70,7 @@ type Festival {
   conceptText: String
   coverImageUrl: String
   createdAt: DateTime!
+  creatorId: String
   id: ID!
   imageCount: Float!
   name: String!
@@ -94,8 +98,11 @@ type Image {
   createdAt: DateTime!
   festival: Festival
   festivalId: String!
+  galleryUrls: [String!]!
   id: ID!
   isTopImage: Boolean!
+  judgeAverageRating: Float
+  judgeRatingCount: Int!
   slug: String!
   tags: [String!]!
   title: String
@@ -111,6 +118,7 @@ input LoginInput {
 type Mutation {
   addAdminReview(input: AddCommentInput!): Comment!
   addComment(input: AddCommentInput!): Comment!
+  addJudgeReview(input: AddCommentInput!): Comment!
   changeRoles(changes: [ChangeRoleInput!]!): [User!]!
   createFestival(input: CreateFestivalInput!): Festival!
   createUsers(inputs: [CreateUserInput!]!): [User!]!
@@ -173,6 +181,7 @@ type Rating {
   createdAt: DateTime!
   id: ID!
   imageId: String!
+  maxScore: Int!
   score: Int!
   userId: String!
 }
@@ -180,6 +189,9 @@ type Rating {
 enum Role {
   ADMIN
   JUDGE
+  JUDGE_LEVEL_1
+  JUDGE_LEVEL_2
+  JUDGE_LEVEL_3
   SUPER_ADMIN
   USER
 }
@@ -219,10 +231,11 @@ input UpdateUserInput {
 }
 
 input UploadImageInput {
+  coverIndex: Int! = 0
   festivalId: ID!
   tags: [String!] = []
   title: String
-  url: String!
+  urls: [String!]!
 }
 
 type User {

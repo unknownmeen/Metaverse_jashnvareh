@@ -1,4 +1,5 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Int } from '@nestjs/graphql';
 import { UserModel } from '../../users/models/user.model';
 
 @ObjectType('Comment')
@@ -13,6 +14,9 @@ export class CommentModel {
   isAdminReview: boolean;
 
   @Field()
+  isJudgeReview: boolean;
+
+  @Field()
   imageId: string;
 
   @Field()
@@ -23,4 +27,10 @@ export class CommentModel {
 
   @Field()
   createdAt: Date;
+
+  @Field(() => Int, { nullable: true })
+  ratingScore?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  ratingMaxScore?: number | null;
 }

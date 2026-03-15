@@ -35,8 +35,9 @@ import {
 import type { User } from "@/types/models";
 import type { UserRole, Gender } from "@/types/models";
 
-const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "JUDGE", "USER"];
+const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "JUDGE_LEVEL_1", "JUDGE_LEVEL_2", "JUDGE_LEVEL_3", "USER"];
 const GENDERS: Gender[] = ["MALE", "FEMALE"];
+const ROLE_FILTERS: Array<UserRole | "ALL"> = ["ALL", "ADMIN", "JUDGE_LEVEL_1", "JUDGE_LEVEL_2", "JUDGE_LEVEL_3", "USER"];
 
 interface NewUserRow {
   id: string;
@@ -57,8 +58,9 @@ function RoleSelect({
   onValueChange: (v: UserRole) => void;
   className?: string;
 }) {
+  const normalizedValue = value === "JUDGE" ? "JUDGE_LEVEL_1" : value;
   return (
-    <Select value={value} onValueChange={(v) => onValueChange(v as UserRole)}>
+    <Select value={normalizedValue} onValueChange={(v) => onValueChange(v as UserRole)}>
       <SelectTrigger className={className}>
         <SelectValue />
       </SelectTrigger>
@@ -120,7 +122,9 @@ export function UserManagementPage() {
   const users = useMemo(() => {
     let list = allUsers;
     if (roleFilter !== "ALL") {
-      list = list.filter((u) => u.role === roleFilter);
+      list = roleFilter.startsWith("JUDGE_LEVEL")
+        ? list.filter((u) => u.role === roleFilter || (roleFilter === "JUDGE_LEVEL_1" && u.role === "JUDGE"))
+        : list.filter((u) => u.role === roleFilter);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.trim();
@@ -348,7 +352,7 @@ export function UserManagementPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-slate-500">{t("user_management.filter_by_role")}:</span>
-            {(["ALL", "ADMIN", "JUDGE", "USER"] as const).map((r) => (
+            {ROLE_FILTERS.map((r) => (
               <button
                 key={r}
                 type="button"

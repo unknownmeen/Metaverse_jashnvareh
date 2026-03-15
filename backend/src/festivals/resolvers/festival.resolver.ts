@@ -1,6 +1,6 @@
 import { Resolver, Query, Mutation, Args, ID, ResolveField, Parent } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { FestivalModel } from '../models/festival.model';
 import { FestivalReadService } from '../services/festival-read.service';
 import { FestivalWriteService } from '../services/festival-write.service';
@@ -8,7 +8,7 @@ import { CreateFestivalInput } from '../dto/create-festival.input';
 import { UpdateFestivalInput } from '../dto/update-festival.input';
 import { UpdateFestivalStatusInput } from '../dto/update-festival-status.input';
 import { GqlAuthGuard, RolesGuard } from '../../common/guards';
-import { Roles } from '../../common/decorators';
+import { CurrentUser, Roles } from '../../common/decorators';
 
 @Resolver(() => FestivalModel)
 export class FestivalResolver {
@@ -32,15 +32,15 @@ export class FestivalResolver {
   @Mutation(() => FestivalModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  async createFestival(@Args('input') input: CreateFestivalInput) {
-    return this.festivalWriteService.create(input);
+  async createFestival(@CurrentUser() user: User, @Args('input') input: CreateFestivalInput) {
+    return this.festivalWriteService.create(user.id, input);
   }
 
   @Mutation(() => FestivalModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  async updateFestival(@Args('input') input: UpdateFestivalInput) {
-    return this.festivalWriteService.update(input);
+  async updateFestival(@CurrentUser() user: User, @Args('input') input: UpdateFestivalInput) {
+    return this.festivalWriteService.update(user.id, input);
   }
 
   /**
@@ -51,15 +51,15 @@ export class FestivalResolver {
   @Mutation(() => FestivalModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  async updateFestivalStatus(@Args('input') input: UpdateFestivalStatusInput) {
-    return this.festivalWriteService.updateStatus(input.festivalId, input.newStatus);
+  async updateFestivalStatus(@CurrentUser() user: User, @Args('input') input: UpdateFestivalStatusInput) {
+    return this.festivalWriteService.updateStatus(user.id, input.festivalId, input.newStatus);
   }
 
   @Mutation(() => Boolean)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  async deleteFestival(@Args('festivalId', { type: () => ID }) festivalId: string) {
-    return this.festivalWriteService.delete(festivalId);
+  async deleteFestival(@CurrentUser() user: User, @Args('festivalId', { type: () => ID }) festivalId: string) {
+    return this.festivalWriteService.delete(user.id, festivalId);
   }
 
   @ResolveField('imageCount', () => Number)

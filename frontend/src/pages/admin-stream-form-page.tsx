@@ -3,6 +3,7 @@ import { Loader2, Upload, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 
+import { useAppStore } from "@/app/store";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -159,6 +160,7 @@ function UploadCard({
 export function AdminStreamFormPage() {
   const navigate = useNavigate();
   const { streamId } = useParams();
+  const { currentUser } = useAppStore();
 
   const { data: festivalData, loading: loadingFestival } = useQuery<{ festival: Festival }>(GET_FESTIVAL_QUERY, {
     variables: { idOrSlug: streamId },
@@ -167,6 +169,7 @@ export function AdminStreamFormPage() {
 
   const editingFestival = festivalData?.festival;
   const isEditMode = Boolean(streamId && editingFestival);
+  const canManageFestival = !editingFestival?.creatorId || editingFestival.creatorId === currentUser?.id;
 
   const [form, setForm] = useState<FormState>(defaultForm);
 
@@ -255,6 +258,14 @@ export function AdminStreamFormPage() {
   };
 
   const submitting = creating || updatingFestival || updatingStatus;
+
+  if (isEditMode && editingFestival && !canManageFestival) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-5">
+        <Alert variant="error">{t("admin.only_creator_can_manage")}</Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl animate-fade-in px-4 py-5">

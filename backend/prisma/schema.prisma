@@ -17,6 +17,9 @@ enum Role {
   SUPER_ADMIN
   ADMIN
   JUDGE
+  JUDGE_LEVEL_1
+  JUDGE_LEVEL_2
+  JUDGE_LEVEL_3
   USER
 }
 
@@ -43,6 +46,11 @@ enum NotificationType {
   TOP_IMAGE
 }
 
+enum RatingCategory {
+  USER
+  JUDGE
+}
+
 // ── Models ───────────────────────────────────────────────────
 
 model User {
@@ -61,6 +69,7 @@ model User {
   images                Image[]
   comments              Comment[]
   ratings               Rating[]
+  createdFestivals      Festival[]      @relation("FestivalCreator")
   notifications         Notification[] @relation("ReceiverNotifications")
   sentNotifications     Notification[] @relation("SenderNotifications")
 
@@ -78,6 +87,9 @@ model Festival {
   rulesText        String?
   status           FestivalStatus   @default(UNOPENED)
 
+  creatorId String?
+  creator   User? @relation("FestivalCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -90,6 +102,7 @@ model Image {
   id         String  @id @default(uuid())
   slug       String  @unique
   url        String
+  galleryUrls String[] @default([])
   title      String?
   isTopImage Boolean @default(false)
   tags       String[] @default([])
@@ -113,6 +126,7 @@ model Comment {
   id            String  @id @default(uuid())
   text          String
   isAdminReview Boolean @default(false)
+  isJudgeReview Boolean @default(false)
 
   imageId String
   image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
@@ -129,6 +143,8 @@ model Comment {
 model Rating {
   id    String @id @default(uuid())
   score Int
+  maxScore Int @default(5)
+  category RatingCategory @default(USER)
 
   imageId String
   image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
@@ -139,7 +155,7 @@ model Rating {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([imageId, userId])
+  @@unique([imageId, userId, category])
   @@map("ratings")
 }
 

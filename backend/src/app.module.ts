@@ -38,6 +38,11 @@ import { UploadModule } from './upload/upload.module';
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
+      serveStaticOptions: {
+        setHeaders: (res) => {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        },
+      },
     }),
 
     // ── Database ───────────────────────────────────────

@@ -13,6 +13,9 @@ export class ImageModel {
   @Field()
   url: string;
 
+  @Field(() => [String])
+  galleryUrls: string[];
+
   @Field({ nullable: true })
   title?: string;
 
@@ -37,8 +40,14 @@ export class ImageModel {
   @Field(() => Float, { nullable: true })
   averageRating?: number;
 
+  @Field(() => Float, { nullable: true })
+  judgeAverageRating?: number;
+
   @Field()
   commentCount: number;
+
+  @Field()
+  judgeRatingCount: number;
 
   @Field()
   createdAt: Date;

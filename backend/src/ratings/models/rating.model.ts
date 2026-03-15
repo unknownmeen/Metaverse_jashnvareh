@@ -8,6 +8,9 @@ export class RatingModel {
   @Field(() => Int)
   score: number;
 
+  @Field(() => Int)
+  maxScore: number;
+
   @Field()
   imageId: string;
 

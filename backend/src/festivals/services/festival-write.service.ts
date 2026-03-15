@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Festival, FestivalStatus } from '@prisma/client';
 import { FestivalRepository } from '../repositories/festival.repository';
 import { FestivalStateMachine } from '../state/festival-state-machine';
@@ -12,7 +12,7 @@ export class FestivalWriteService {
     private readonly stateMachine: FestivalStateMachine,
   ) {}
 
-  async create(input: CreateFestivalInput): Promise<Festival> {
+  async create(userId: string, input: CreateFestivalInput): Promise<Festival> {
     const slug = await this.ensureUniqueSlug(this.slugFromName(input.name));
     return this.festivalRepository.create({
       slug,
@@ -23,14 +23,16 @@ export class FestivalWriteService {
       conceptText: input.conceptText,
       rulesText: input.rulesText,
       status: input.status ?? FestivalStatus.UNOPENED,
+      creator: { connect: { id: userId } },
     });
   }
 
-  async update(input: UpdateFestivalInput): Promise<Festival> {
+  async update(userId: string, input: UpdateFestivalInput): Promise<Festival> {
     const festival = await this.festivalRepository.findById(input.festivalId);
     if (!festival) {
       throw new NotFoundException('جشنواره یافت نشد');
     }
+    this.assertCanManageFestival(userId, festival);
 
     const newSlug = await this.ensureUniqueSlug(this.slugFromName(input.name), input.festivalId);
     const updateData: Record<string, unknown> = {
@@ -49,11 +51,12 @@ export class FestivalWriteService {
    * Updates festival status through the State Machine.
    * The state machine validates the transition and throws if invalid.
    */
-  async updateStatus(festivalId: string, newStatus: FestivalStatus): Promise<Festival> {
+  async updateStatus(userId: string, festivalId: string, newStatus: FestivalStatus): Promise<Festival> {
     const festival = await this.festivalRepository.findById(festivalId);
     if (!festival) {
       throw new NotFoundException('جشنواره یافت نشد');
     }
+    this.assertCanManageFestival(userId, festival);
 
     // State Machine validates the transition
     const validatedStatus = this.stateMachine.transition(festival.status, newStatus);
@@ -64,14 +67,21 @@ export class FestivalWriteService {
   /**
    * Deletes a festival. Cascades to images, comments, and ratings.
    */
-  async delete(festivalId: string): Promise<boolean> {
+  async delete(userId: string, festivalId: string): Promise<boolean> {
     const festival = await this.festivalRepository.findById(festivalId);
     if (!festival) {
       throw new NotFoundException('جشنواره یافت نشد');
     }
+    this.assertCanManageFestival(userId, festival);
 
     await this.festivalRepository.delete(festivalId);
     return true;
+  }
+
+  private assertCanManageFestival(userId: string, festival: Pick<Festival, 'creatorId'>) {
+    if (festival.creatorId && festival.creatorId !== userId) {
+      throw new ForbiddenException('فقط دبیر سازنده این جشنواره می‌تواند آن را مدیریت کند');
+    }
   }
 
   /** تولید slug از نام جریان */

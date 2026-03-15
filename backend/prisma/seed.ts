@@ -398,7 +398,7 @@ async function main() {
     create: {
       id: 'seed-notif-2',
       type: NotificationType.TOP_IMAGE,
-      text: 'تصویر شما «پنجره‌های روشن» به عنوان منتخب ادمین انتخاب شد.',
+      text: 'تصویر شما «پنجره‌های روشن» به عنوان منتخب جشنواره انتخاب شد.',
       isRead: false,
       userId: user1.id,
       senderId: user2.id,

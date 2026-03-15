@@ -13,7 +13,9 @@ interface ImageCardProps {
 
 export function ImageCard({ image, subtitle }: ImageCardProps) {
   const averageRating = image.averageRating ?? 0;
+  const judgeAverageRating = image.judgeAverageRating ?? 0;
   const commentCount = image.commentCount ?? 0;
+  const galleryCount = image.galleryUrls.length > 0 ? image.galleryUrls.length : 1;
 
   return (
     <Link
@@ -28,15 +30,24 @@ export function ImageCard({ image, subtitle }: ImageCardProps) {
             loading="lazy"
             src={resolveMediaUrl(image.url)}
           />
+          {galleryCount > 1 ? (
+            <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+              {formatNumberFa(galleryCount)} عکس
+            </span>
+          ) : null}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           <div className="absolute bottom-3 left-3 right-3 flex items-center gap-3 opacity-0 transition-all duration-300 group-hover:opacity-100">
+            <span className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
+              <MessageCircle className="h-3.5 w-3.5" />
+              {formatNumberFa(commentCount)}
+            </span>
             <span className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
               <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
               {formatNumberFa(Number(averageRating.toFixed(1)))}
             </span>
-            <span className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
-              <MessageCircle className="h-3.5 w-3.5" />
-              {formatNumberFa(commentCount)}
+            <span className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-violet-700 backdrop-blur-sm">
+              <Star className="h-3.5 w-3.5 fill-violet-500 text-violet-500" />
+              {formatNumberFa(Number(judgeAverageRating.toFixed(1)))}
             </span>
           </div>
         </div>

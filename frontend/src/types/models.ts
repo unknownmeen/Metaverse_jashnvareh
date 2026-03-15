@@ -1,6 +1,13 @@
 // ─── Enums (matching backend GraphQL schema) ─────────────────
 
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "JUDGE" | "USER";
+export type UserRole =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "JUDGE"
+  | "JUDGE_LEVEL_1"
+  | "JUDGE_LEVEL_2"
+  | "JUDGE_LEVEL_3"
+  | "USER";
 export type Gender = "MALE" | "FEMALE";
 export type FestivalStatus = "UNOPENED" | "OPEN" | "CLOSED";
 export type ConceptMediaType = "IMAGE" | "VIDEO";
@@ -24,6 +31,7 @@ export interface Festival {
   id: string;
   slug: string;
   name: string;
+  creatorId?: string | null;
   coverImageUrl?: string | null;
   conceptMediaType: ConceptMediaType;
   conceptMediaUrl?: string | null;
@@ -39,15 +47,18 @@ export interface ImageItem {
   id: string;
   slug: string;
   url: string;
+  galleryUrls: string[];
   title?: string | null;
   isTopImage: boolean;
   tags: string[];
   festivalId: string;
   userId: string;
   author: User;
-  festival?: { id: string; slug: string; name: string } | null;
+  festival?: { id: string; slug: string; name: string; creatorId?: string | null } | null;
   averageRating?: number | null;
+  judgeAverageRating?: number | null;
   commentCount: number;
+  judgeRatingCount: number;
   createdAt: string;
 }
 
@@ -55,6 +66,9 @@ export interface Comment {
   id: string;
   text: string;
   isAdminReview: boolean;
+  isJudgeReview: boolean;
+  ratingScore?: number | null;
+  ratingMaxScore?: number | null;
   imageId: string;
   userId: string;
   author: User;

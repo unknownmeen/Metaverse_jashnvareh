@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FestivalStatus, Image } from '@prisma/client';
 import { randomUUID } from 'crypto';
@@ -31,15 +31,35 @@ export class ImageWriteService {
       );
     }
 
+    const urls = this.normalizeUrls(input.urls);
+    const safeCoverIndex = Math.min(input.coverIndex ?? 0, urls.length - 1);
+    const coverUrl = urls[safeCoverIndex];
     const slug = await this.generateSlug(input.title ?? '');
     return this.imageRepository.create({
       slug,
-      url: input.url,
+      url: coverUrl,
+      galleryUrls: urls,
       title: input.title,
       tags: input.tags ?? [],
       festival: { connect: { id: input.festivalId } },
       user: { connect: { id: userId } },
     });
+  }
+
+  private normalizeUrls(urls: string[]): string[] {
+    const cleanedUrls = Array.from(
+      new Set((urls ?? []).map((url) => url.trim()).filter(Boolean)),
+    );
+
+    if (cleanedUrls.length === 0) {
+      throw new BadRequestException('حداقل یک تصویر برای ارسال لازم است');
+    }
+
+    if (cleanedUrls.length > 3) {
+      throw new BadRequestException('حداکثر سه تصویر در هر پست قابل ثبت است');
+    }
+
+    return cleanedUrls;
   }
 
   /** تولید slug از عنوان با fallback برای تضمین یکتایی */
@@ -69,10 +89,18 @@ export class ImageWriteService {
    * Toggle the "Top Image" (featured) status.
    * Emits IMAGE_TOP_SELECTED event when an image is marked as top.
    */
-  async toggleTopImage(imageId: string): Promise<Image> {
+  async toggleTopImage(userId: string, imageId: string): Promise<Image> {
     const image = await this.imageRepository.findById(imageId);
     if (!image) {
       throw new NotFoundException('تصویر یافت نشد');
+    }
+
+    const festival = await this.festivalRepository.findById(image.festivalId);
+    if (!festival) {
+      throw new NotFoundException('جشنواره یافت نشد');
+    }
+    if (festival.creatorId && festival.creatorId !== userId) {
+      throw new ForbiddenException('فقط دبیر سازنده این جشنواره می‌تواند اثر منتخب انتخاب کند');
     }
 
     const newTopStatus = !image.isTopImage;

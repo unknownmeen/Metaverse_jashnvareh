@@ -23,7 +23,7 @@ export class NotificationListener {
   async handleImageTopSelected(event: ImageTopSelectedEvent) {
     await this.notificationRepository.create({
       type: NotificationType.TOP_IMAGE,
-      text: `تصویر شما «${event.imageTitle}» به عنوان منتخب ادمین انتخاب شد.`,
+      text: `تصویر شما «${event.imageTitle}» به عنوان منتخب جشنواره انتخاب شد.`,
       userId: event.imageOwnerId,
       imageId: event.imageId,
     });
@@ -79,7 +79,7 @@ export class NotificationListener {
   }) {
     await this.notificationRepository.create({
       type: NotificationType.SYSTEM,
-      text: `نقد جدیدی توسط ادمین برای تصویر شما ثبت شد.`,
+      text: `نقد جدیدی توسط دبیر برای تصویر شما ثبت شد.`,
       userId: payload.imageOwnerId,
       senderId: payload.reviewerId,
       imageId: payload.imageId,

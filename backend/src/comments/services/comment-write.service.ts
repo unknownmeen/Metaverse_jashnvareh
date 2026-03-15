@@ -4,6 +4,7 @@ import { Comment, Role, User } from '@prisma/client';
 import { CommentRepository } from '../repositories/comment.repository';
 import { ImageRepository } from '../../images/repositories/image.repository';
 import { AddCommentInput } from '../dto/add-comment.input';
+import { isJudgeRole } from '../../common/utils/role.util';
 
 @Injectable()
 export class CommentWriteService {
@@ -14,6 +15,10 @@ export class CommentWriteService {
   ) {}
 
   async addComment(user: User, input: AddCommentInput): Promise<Comment> {
+    if (isJudgeRole(user.role)) {
+      throw new ForbiddenException('داوران باید از بخش نقد داوری نظر خود را ثبت کنند');
+    }
+
     const image = await this.imageRepository.findById(input.imageId);
     if (!image) {
       throw new NotFoundException('تصویر یافت نشد');
@@ -64,6 +69,39 @@ export class CommentWriteService {
         imageId: image.id,
         imageOwnerId: image.userId,
         reviewerId: user.id,
+      });
+    }
+
+    return comment;
+  }
+
+  async addJudgeReview(user: User, input: AddCommentInput): Promise<Comment> {
+    if (!isJudgeRole(user.role)) {
+      throw new ForbiddenException('فقط داوران می‌توانند نقد داوری ثبت کنند');
+    }
+
+    const image = await this.imageRepository.findById(input.imageId);
+    if (!image) {
+      throw new NotFoundException('تصویر یافت نشد');
+    }
+    if (image.userId === user.id) {
+      throw new ForbiddenException('کاربر نمی‌تواند روی اثر خودش نظر بگذارد');
+    }
+
+    const comment = await this.commentRepository.create({
+      text: input.text,
+      isAdminReview: false,
+      isJudgeReview: true,
+      image: { connect: { id: input.imageId } },
+      user: { connect: { id: user.id } },
+    });
+
+    if (image.userId !== user.id) {
+      this.eventEmitter.emit('COMMENT_ADDED', {
+        imageId: image.id,
+        imageOwnerId: image.userId,
+        commenterId: user.id,
+        commenterName: user.realName,
       });
     }
 

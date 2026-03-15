@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILES = 3;
+const MAX_DESCRIPTION_LENGTH = 200;
 
 type FileStatus = "uploading" | "success" | "error";
 
@@ -343,10 +344,16 @@ export function ImageUploadModal({ open, onOpenChange, onComplete }: ImageUpload
                   placeholder="توضیحات تصویر را وارد کنید"
                   rows={4}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => setDescription(e.target.value.slice(0, MAX_DESCRIPTION_LENGTH))}
                   className="rounded-xl text-right"
+                  maxLength={MAX_DESCRIPTION_LENGTH}
                 />
-                <p className="mt-1 text-xs text-slate-400">حداکثر ۲۰۰ کلمه</p>
+                <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
+                  <p>حداکثر ۲۰۰ کاراکتر</p>
+                  <span>
+                    {description.length} / {MAX_DESCRIPTION_LENGTH}
+                  </span>
+                </div>
               </div>
             </div>
 

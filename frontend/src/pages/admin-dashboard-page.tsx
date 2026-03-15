@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { createPortal } from "react-dom";
 
+import { useAppStore } from "@/app/store";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { StreamStatusBadge } from "@/features/streams/stream-status-badge";
@@ -15,6 +16,7 @@ import type { Festival } from "@/types/models";
 
 export function AdminDashboardPage() {
   const navigate = useNavigate();
+  const { currentUser } = useAppStore();
   const { data, loading } = useQuery<{ festivals: Festival[] }>(GET_FESTIVALS_QUERY);
   const [deleteFestival, { loading: deleting }] = useMutation(DELETE_FESTIVAL_MUTATION, {
     refetchQueries: [{ query: GET_FESTIVALS_QUERY }],
@@ -60,7 +62,9 @@ export function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {festivals.map((festival) => (
+        {festivals.map((festival) => {
+          const canManageFestival = !festival.creatorId || festival.creatorId === currentUser?.id;
+          return (
           <div key={festival.id} className="group w-full text-right">
             <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/60">
               <div className="relative aspect-[16/10] overflow-hidden rounded-t-3xl">
@@ -70,40 +74,42 @@ export function AdminDashboardPage() {
                   src={resolveMediaUrl(festival.coverImageUrl)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <div className="absolute left-3 top-3 flex flex-col gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <div className="group/btn relative inline-flex">
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/admin/streams/${festival.slug}/edit`);
-                      }}
-                      size="icon"
-                      variant="ghost"
-                      className="h-9 w-9 flex-shrink-0 rounded-xl bg-white/80 text-slate-600 backdrop-blur-sm hover:bg-white hover:text-primary-600"
-                    >
-                      <SquarePen className="h-4 w-4" />
-                    </Button>
-                    <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-800 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/btn:opacity-100">
-                      {t("admin.edit")}
-                    </span>
+                {canManageFestival ? (
+                  <div className="absolute left-3 top-3 flex flex-col gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <div className="group/btn relative inline-flex">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/admin/streams/${festival.slug}/edit`);
+                        }}
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 flex-shrink-0 rounded-xl bg-white/80 text-slate-600 backdrop-blur-sm hover:bg-white hover:text-primary-600"
+                      >
+                        <SquarePen className="h-4 w-4" />
+                      </Button>
+                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-800 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/btn:opacity-100">
+                        {t("admin.edit")}
+                      </span>
+                    </div>
+                    <div className="group/btn relative inline-flex">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(festival.id);
+                        }}
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 flex-shrink-0 rounded-xl bg-white/80 text-slate-600 backdrop-blur-sm hover:bg-white hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-800 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/btn:opacity-100">
+                        {t("admin.delete")}
+                      </span>
+                    </div>
                   </div>
-                  <div className="group/btn relative inline-flex">
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteTarget(festival.id);
-                      }}
-                      size="icon"
-                      variant="ghost"
-                      className="h-9 w-9 flex-shrink-0 rounded-xl bg-white/80 text-slate-600 backdrop-blur-sm hover:bg-white hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-800 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/btn:opacity-100">
-                      {t("admin.delete")}
-                    </span>
-                  </div>
-                </div>
+                ) : null}
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between opacity-0 transition-all duration-300 group-hover:opacity-100">
                   <span className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
                     <Images className="h-3.5 w-3.5" />
@@ -119,6 +125,11 @@ export function AdminDashboardPage() {
                 <p className="line-clamp-2 text-justify text-xs leading-5 text-muted-foreground">
                   {festival.conceptText || t("admin.images_fallback", { count: festival.imageCount })}
                 </p>
+                {!canManageFestival ? (
+                  <p className="rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                    {t("admin.only_creator_can_manage")}
+                  </p>
+                ) : null}
 
                 <div className="flex items-center gap-1 border-t border-slate-100 pt-3 text-sm font-semibold text-primary-500 transition-colors group-hover:text-primary-600">
                   <button
@@ -133,7 +144,8 @@ export function AdminDashboardPage() {
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {deleteTarget !== null &&

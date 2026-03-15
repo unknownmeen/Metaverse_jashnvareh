@@ -11,6 +11,6 @@ export class RateImageInput {
   @Field(() => Int)
   @IsInt()
   @Min(1)
-  @Max(5)
+  @Max(7)
   score: number;
 }

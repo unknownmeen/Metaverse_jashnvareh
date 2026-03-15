@@ -21,6 +21,7 @@ export const FESTIVAL_FRAGMENT = gql`
     id
     slug
     name
+    creatorId
     coverImageUrl
     conceptMediaType
     conceptMediaUrl
@@ -38,13 +39,16 @@ export const IMAGE_FRAGMENT = gql`
     id
     slug
     url
+    galleryUrls
     title
     isTopImage
     tags
     festivalId
     userId
     averageRating
+    judgeAverageRating
     commentCount
+    judgeRatingCount
     createdAt
     author {
       ...UserFields
@@ -53,6 +57,7 @@ export const IMAGE_FRAGMENT = gql`
       id
       slug
       name
+      creatorId
     }
   }
   ${USER_FRAGMENT}
@@ -63,6 +68,9 @@ export const COMMENT_FRAGMENT = gql`
     id
     text
     isAdminReview
+    isJudgeReview
+    ratingScore
+    ratingMaxScore
     imageId
     userId
     createdAt
@@ -290,6 +298,15 @@ export const ADD_COMMENT_MUTATION = gql`
 export const ADD_ADMIN_REVIEW_MUTATION = gql`
   mutation AddAdminReview($input: AddCommentInput!) {
     addAdminReview(input: $input) {
+      ...CommentFields
+    }
+  }
+  ${COMMENT_FRAGMENT}
+`;
+
+export const ADD_JUDGE_REVIEW_MUTATION = gql`
+  mutation AddJudgeReview($input: AddCommentInput!) {
+    addJudgeReview(input: $input) {
       ...CommentFields
     }
   }

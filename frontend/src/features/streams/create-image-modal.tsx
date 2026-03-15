@@ -2,28 +2,28 @@ import { useCallback, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { t } from "@/lib/i18n";
+import { resolveMediaUrl } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FileUpload, type FileUploadRef } from "@/components/shared/file-upload";
 
-interface SelectedFile {
-  url: string;
-}
-
 interface CreateImageModalProps {
   open: boolean;
   onClose: () => void;
   streamName: string;
-  onComplete: (url: string, title: string, description: string) => void;
+  onComplete: (urls: string[], title: string, description: string, coverIndex: number) => void;
 }
+
+const MAX_DESCRIPTION_LENGTH = 200;
 
 export function CreateImageModal({ open, onClose, streamName, onComplete }: CreateImageModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [imageTitle, setImageTitle] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
+  const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
+  const [coverIndex, setCoverIndex] = useState(0);
   const [successCount, setSuccessCount] = useState(0);
   const fileUploadRef = useRef<FileUploadRef>(null);
 
@@ -31,25 +31,26 @@ export function CreateImageModal({ open, onClose, streamName, onComplete }: Crea
     setStep(1);
     setImageTitle("");
     setPrompt("");
-    setSelectedFile(null);
+    setSelectedUrls([]);
+    setCoverIndex(0);
     onClose();
   }, [onClose]);
 
   const handleNextStep = useCallback(() => {
     const successFiles = fileUploadRef.current?.getSuccessFiles() ?? [];
-    const first = successFiles[0];
-    if (first) {
-      setSelectedFile({ url: first.url });
+    if (successFiles.length > 0) {
+      setSelectedUrls(successFiles.map((file) => file.url));
+      setCoverIndex(0);
       setStep(2);
     }
   }, []);
 
   const handleSubmit = useCallback(() => {
-    if (selectedFile && imageTitle.trim()) {
-      onComplete(selectedFile.url, imageTitle.trim(), prompt.trim());
+    if (selectedUrls.length > 0 && imageTitle.trim()) {
+      onComplete(selectedUrls, imageTitle.trim(), prompt.trim(), coverIndex);
       handleClose();
     }
-  }, [onComplete, prompt, imageTitle, selectedFile, handleClose]);
+  }, [onComplete, prompt, imageTitle, selectedUrls, coverIndex, handleClose]);
 
   const canProceed = step === 1 ? successCount > 0 : imageTitle.trim().length > 0;
 
@@ -92,6 +93,41 @@ export function CreateImageModal({ open, onClose, streamName, onComplete }: Crea
                   {t("nav.festival")}: <span className="font-bold text-slate-800">{streamName}</span>
                 </p>
               </div>
+              {selectedUrls.length > 0 ? (
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-slate-400">{t("image_upload.cover_select_label")}</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {selectedUrls.map((url, index) => {
+                      const isSelected = index === coverIndex;
+                      return (
+                        <button
+                          type="button"
+                          key={url}
+                          onClick={() => setCoverIndex(index)}
+                          className={`relative overflow-hidden rounded-2xl border-2 transition-all ${
+                            isSelected
+                              ? "border-primary-500 ring-2 ring-primary-200"
+                              : "border-slate-200 hover:border-primary-300"
+                          }`}
+                        >
+                          <img
+                            alt={`${t("image_upload.image_title")} ${index + 1}`}
+                            className="aspect-square h-full w-full object-cover"
+                            src={resolveMediaUrl(url)}
+                          />
+                          <span
+                            className={`absolute bottom-2 right-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                              isSelected ? "bg-primary-500 text-white" : "bg-white/90 text-slate-700"
+                            }`}
+                          >
+                            {isSelected ? t("image_upload.cover_selected") : t("image_upload.set_as_cover")}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-400" htmlFor="img-title">
                   {t("image_upload.image_title_label")}
@@ -111,11 +147,17 @@ export function CreateImageModal({ open, onClose, streamName, onComplete }: Crea
                 <Textarea
                   placeholder={t("image_upload.image_desc_placeholder")}
                   value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
+                  onChange={(e) => setPrompt(e.target.value.slice(0, MAX_DESCRIPTION_LENGTH))}
                   className="min-h-[100px] rounded-xl text-right"
+                  maxLength={MAX_DESCRIPTION_LENGTH}
                   rows={4}
                 />
-                <p className="mt-1 text-xs text-slate-400">{t("image_upload.max_200_words")}</p>
+                <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
+                  <p>{t("image_upload.max_200_chars")}</p>
+                  <span>
+                    {prompt.length} / {MAX_DESCRIPTION_LENGTH}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-row-reverse items-center gap-2 pt-1">
                 <Button

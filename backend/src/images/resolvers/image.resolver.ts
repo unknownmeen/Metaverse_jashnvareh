@@ -64,8 +64,8 @@ export class ImageResolver {
   @Mutation(() => ImageModel)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  async toggleTopImage(@Args('imageId', { type: () => ID }) imageId: string) {
-    return this.imageWriteService.toggleTopImage(imageId);
+  async toggleTopImage(@CurrentUser() user: User, @Args('imageId', { type: () => ID }) imageId: string) {
+    return this.imageWriteService.toggleTopImage(user.id, imageId);
   }
 
   /**
@@ -84,9 +84,21 @@ export class ImageResolver {
     return result.count > 0 ? result.average : null;
   }
 
+  @ResolveField('judgeAverageRating', () => Float, { nullable: true })
+  async resolveJudgeAverageRating(@Parent() image: { id: string }): Promise<number | null> {
+    const result = await this.ratingReadService.getJudgeAverageRating(image.id);
+    return result.count > 0 ? result.average : null;
+  }
+
   @ResolveField('commentCount', () => Int)
   async resolveCommentCount(@Parent() image: { id: string }): Promise<number> {
     return this.imageReadService.getCommentCount(image.id);
+  }
+
+  @ResolveField('judgeRatingCount', () => Int)
+  async resolveJudgeRatingCount(@Parent() image: { id: string }): Promise<number> {
+    const result = await this.ratingReadService.getJudgeAverageRating(image.id);
+    return result.count;
   }
 
   @ResolveField('festival', () => FestivalModel, { nullable: true })

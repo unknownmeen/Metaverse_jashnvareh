@@ -156,7 +156,7 @@ export const seedNotifications: NotificationItem[] = [
   {
     id: "n-2",
     icon: "system",
-    text: "تصویر شما «پنجره های روشن» به عنوان منتخب ادمین انتخاب شد.",
+    text: "تصویر شما «پنجره های روشن» به عنوان منتخب جشنواره انتخاب شد.",
     createdAt: "2026-03-01T17:00:00.000Z",
     read: false,
     targetUserId: "u-admin",

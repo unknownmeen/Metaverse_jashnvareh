@@ -34,6 +34,9 @@ export class FestivalModel {
   @Field(() => FestivalStatus)
   status: FestivalStatus;
 
+  @Field({ nullable: true })
+  creatorId?: string;
+
   @Field(() => Int)
   imageCount: number;
 
