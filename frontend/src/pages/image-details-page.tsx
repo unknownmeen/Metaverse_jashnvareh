@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { Award, ChevronLeft, ChevronRight, Loader2, Maximize2, MessageCircle, Star } from "lucide-react";
+import { Award, ChevronLeft, ChevronRight, Loader2, Maximize2, MessageCircle, Star, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@apollo/client/react";
 
@@ -21,6 +21,7 @@ import {
   ADD_COMMENT_MUTATION,
   ADD_ADMIN_REVIEW_MUTATION,
   ADD_JUDGE_REVIEW_MUTATION,
+  DELETE_COMMENT_MUTATION,
   RATE_IMAGE_MUTATION,
   TOGGLE_TOP_IMAGE_MUTATION,
 } from "@/graphql/operations";
@@ -54,6 +55,7 @@ export function ImageDetailsPage() {
   const [addAdminReview, { loading: adminReviewing }] = useMutation(ADD_ADMIN_REVIEW_MUTATION);
 
   const [addJudgeReview, { loading: judgeReviewing }] = useMutation(ADD_JUDGE_REVIEW_MUTATION);
+  const [deleteCommentMutation] = useMutation(DELETE_COMMENT_MUTATION);
 
   const [rateImage] = useMutation(RATE_IMAGE_MUTATION);
 
@@ -90,12 +92,13 @@ export function ImageDetailsPage() {
     c.isAdminReview || c.author?.role === "ADMIN" || c.author?.role === "SUPER_ADMIN";
 
   const isJudgeStyleComment = (c: Comment) => c.isJudgeReview;
+  const canSeeJudgeSignals = currentUser?.role === "ADMIN" || currentUser?.role === "SUPER_ADMIN";
 
   const imageComments = [...(commentsData?.imageComments ?? [])].sort((a, b) => {
     const aAdmin = isAdminStyleComment(a);
     const bAdmin = isAdminStyleComment(b);
-    const aJudge = isJudgeStyleComment(a);
-    const bJudge = isJudgeStyleComment(b);
+    const aJudge = canSeeJudgeSignals && isJudgeStyleComment(a);
+    const bJudge = canSeeJudgeSignals && isJudgeStyleComment(b);
     if (aAdmin && !bAdmin) return -1;
     if (!aAdmin && bAdmin) return 1;
     if (aJudge && !bJudge) return -1;
@@ -122,9 +125,14 @@ export function ImageDetailsPage() {
   const judgeMaxScore = getJudgeMaxScore(currentUser.role);
   const judgeAverageRating = image.judgeAverageRating ?? 0;
   const submittingComment = commenting || adminReviewing || judgeReviewing;
+  const canDeleteComments = currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN";
   const getRoleLabel = (role?: Comment["author"]["role"]) => (role ? t(`role.${role.toLowerCase()}`) : "");
   const glassControlClassName =
-    "absolute z-10 flex items-center justify-center rounded-2xl border border-white/45 bg-white/18 text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl transition-all duration-200 hover:border-white/60 hover:bg-white/28 hover:text-primary-700";
+    "absolute z-10 flex items-center justify-center gap-1.5 rounded-full border border-white/95 bg-white/92 px-3 py-2 text-sm font-semibold text-slate-600 shadow-[0_16px_40px_rgba(15,23,42,0.16)] backdrop-blur-xl transition-all duration-200 hover:border-white hover:bg-white hover:text-primary-700 hover:shadow-[0_18px_42px_rgba(15,23,42,0.2)]";
+  const glassBadgeClassName =
+    "rounded-full border border-white/70 bg-white/82 shadow-[0_16px_40px_rgba(15,23,42,0.14)] backdrop-blur-xl";
+  const featuredControlClassName =
+    "absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full border border-white/95 bg-white/92 px-4 py-2 text-sm font-semibold text-slate-600 shadow-[0_16px_40px_rgba(15,23,42,0.16)] backdrop-blur-xl transition-all duration-200 hover:border-white hover:bg-white hover:text-amber-700 hover:shadow-[0_18px_42px_rgba(15,23,42,0.2)]";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -183,6 +191,17 @@ export function ImageDetailsPage() {
     setActiveImageIndex((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1));
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    await deleteCommentMutation({
+      variables: { commentId },
+      refetchQueries: [
+        { query: GET_IMAGE_COMMENTS_QUERY, variables: { imageId: image.id } },
+        { query: GET_IMAGE_QUERY, variables: { idOrSlug: image.slug ?? image.id } },
+      ],
+      awaitRefetchQueries: true,
+    });
+  };
+
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[1.3fr,1fr]">
       <Card className="overflow-hidden border-white/70" data-section="image" data-image-id={image.id}>
@@ -190,7 +209,7 @@ export function ImageDetailsPage() {
           <button
             type="button"
             onClick={() => setZoomOpen(true)}
-            className={`${glassControlClassName} left-3 top-3 h-11 w-11`}
+            className={`${glassControlClassName} left-3 top-3 h-11 w-11 px-0 py-0`}
             title={t("image_details.zoom")}
           >
             <Maximize2 className="h-5 w-5" />
@@ -199,29 +218,29 @@ export function ImageDetailsPage() {
             <button
               type="button"
               onClick={handleToggleFeatured}
-              className={`absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold shadow-lg transition-all backdrop-blur-sm ${
-                image.isTopImage
-                  ? "bg-amber-400 text-amber-900 hover:bg-amber-500"
-                  : "bg-white/80 text-slate-600 hover:bg-white hover:text-amber-700"
-              }`}
+              className={`${featuredControlClassName} ${image.isTopImage ? "text-amber-700" : ""}`}
               title={image.isTopImage ? t("image_details.remove_featured") : t("image_details.set_featured")}
             >
               <Award className="h-4 w-4" />
               {image.isTopImage ? t("image_details.admin_featured") : t("image_details.set_featured")}
             </button>
           )}
-          <div className="absolute right-3 top-16 z-10">
-            <div className="flex items-center gap-2 rounded-full bg-white/92 px-4 py-2 text-sm font-semibold shadow-lg backdrop-blur-sm">
+          <div
+            className={`absolute right-3 z-10 ${
+              currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN" ? "top-16" : "top-3"
+            }`}
+          >
+            <div className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold ${glassBadgeClassName}`}>
               <div className="flex items-center gap-1 text-slate-700">
                 <span>{formatNumberFa(image.commentCount)}</span>
                 <MessageCircle className="h-4 w-4" />
               </div>
-              {image.judgeRatingCount > 0 ? (
+              {canSeeJudgeSignals && image.judgeRatingCount > 0 ? (
                 <>
                   <span className="h-4 w-px bg-slate-200" />
                   <div className="flex items-center gap-1 text-violet-700">
                     <span>
-                      {formatNumberFa(Number(judgeAverageRating.toFixed(1)))} {t("image_details.of_7")}
+                      {formatNumberFa(Number(judgeAverageRating.toFixed(1)))} {t("image_details.of_5")}
                     </span>
                     <Star className="h-4 w-4 fill-violet-500 text-violet-500" />
                   </div>
@@ -234,7 +253,7 @@ export function ImageDetailsPage() {
               <button
                 type="button"
                 onClick={goToPreviousImage}
-                className={`${glassControlClassName} right-3 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full`}
+                className={`${glassControlClassName} right-3 top-1/2 h-11 w-11 -translate-y-1/2 px-0 py-0`}
                 title={t("image_details.prev_image")}
               >
                 <ChevronRight className="h-5 w-5" />
@@ -242,7 +261,7 @@ export function ImageDetailsPage() {
               <button
                 type="button"
                 onClick={goToNextImage}
-                className={`${glassControlClassName} left-3 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full`}
+                className={`${glassControlClassName} left-3 top-1/2 h-11 w-11 -translate-y-1/2 px-0 py-0`}
                 title={t("image_details.next_image")}
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -309,7 +328,9 @@ export function ImageDetailsPage() {
             ) : (
               imageComments.map((comment) => {
                 const isAdminStyle = isAdminStyleComment(comment);
-                const isJudgeStyle = isJudgeStyleComment(comment);
+                const isJudgeStyle = canSeeJudgeSignals && isJudgeStyleComment(comment);
+                const hasRating = Boolean(comment.ratingScore && comment.ratingMaxScore);
+                const commentControlsPadding = hasRating ? "sm:pl-24" : canDeleteComments ? "sm:pl-16" : "";
                 const reviewLabel =
                   isAdminStyle && comment.author?.role === "SUPER_ADMIN"
                     ? ` ${t("image_details.super_admin_review")}`
@@ -320,23 +341,41 @@ export function ImageDetailsPage() {
                       : "";
                 return (
                 <div
-                  className={`relative rounded-2xl border p-3 ${
+                  className={`group relative rounded-2xl border p-3 ${
                     isAdminStyle ? "border-amber-200 bg-amber-50/70" : "border-border bg-white"
                   }`}
                   key={comment.id}
                 >
-                  {comment.ratingScore && comment.ratingMaxScore ? (
-                    <div className="absolute left-3 top-3 rounded-full bg-violet-50 px-2 py-1 shadow-sm">
-                      <StarRating
-                        color={isJudgeStyle ? "purple" : "amber"}
-                        max={comment.ratingMaxScore}
-                        readonly
-                        size="sm"
-                        value={comment.ratingScore}
-                      />
+                  {hasRating ? (
+                    <div className="mb-2 sm:absolute sm:left-3 sm:top-3 sm:mb-0">
+                      <div
+                        className={`inline-flex rounded-full px-1.5 py-0.5 shadow-sm sm:px-2 sm:py-1 ${
+                          isJudgeStyle ? "bg-violet-50" : "bg-amber-50"
+                        }`}
+                      >
+                        <StarRating
+                          color={isJudgeStyle ? "purple" : "amber"}
+                          max={comment.ratingMaxScore!}
+                          readonly
+                          size="sm"
+                          value={comment.ratingScore!}
+                        />
+                      </div>
                     </div>
                   ) : null}
-                  <div className="mb-2 flex items-center gap-2">
+                  {canDeleteComments ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteComment(comment.id)}
+                      className={`absolute inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/92 text-slate-400 shadow-sm transition-all hover:bg-red-50 hover:text-red-600 sm:opacity-0 sm:pointer-events-none sm:group-hover:opacity-100 sm:group-hover:pointer-events-auto ${
+                        hasRating ? "left-3 top-12 sm:top-12" : "left-3 top-3"
+                      }`}
+                      title={t("image_details.delete_comment")}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                  <div className={`mb-2 flex items-center gap-2 ${commentControlsPadding}`}>
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={resolveMediaUrl(comment.author?.avatarUrl)} alt={comment.author?.realName ?? t("image_details.user")} />
                       <AvatarFallback>{t("image_details.user")}</AvatarFallback>
@@ -353,7 +392,7 @@ export function ImageDetailsPage() {
                     </div>
                   </div>
 
-                  <p className="text-sm leading-6 text-slate-700">{comment.text}</p>
+                  <p className={`text-sm leading-6 text-slate-700 ${commentControlsPadding}`}>{comment.text}</p>
                 </div>
               );
               })

@@ -58,6 +58,7 @@ model User {
   phone        String   @unique
   passwordHash String
   role         Role     @default(USER)
+  judgeLevel   Int?
   gender       Gender
   realName     String?
   displayName  String?
@@ -127,6 +128,8 @@ model Comment {
   text          String
   isAdminReview Boolean @default(false)
   isJudgeReview Boolean @default(false)
+  ratingScore   Int?
+  ratingMaxScore Int?
 
   imageId String
   image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)

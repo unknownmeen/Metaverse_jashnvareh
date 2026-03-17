@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { formatNumberFa } from "@/lib/format";
 
 interface ImageZoomOverlayProps {
   src: string;
@@ -27,6 +28,9 @@ export function ImageZoomOverlay({
   prevLabel = "عکس قبلی",
   nextLabel = "عکس بعدی",
 }: ImageZoomOverlayProps) {
+  const overlayControlClassName =
+    "absolute z-20 flex items-center justify-center rounded-full border border-white/95 bg-white/92 text-slate-600 shadow-[0_16px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl transition-all duration-200 hover:border-white hover:bg-white hover:text-primary-700 hover:shadow-[0_18px_42px_rgba(15,23,42,0.22)]";
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -76,7 +80,7 @@ export function ImageZoomOverlay({
       <button
         type="button"
         onClick={onClose}
-        className="absolute left-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-slate-700/80 text-white backdrop-blur-sm transition-colors hover:bg-slate-800"
+        className={`${overlayControlClassName} left-4 top-4 h-10 w-10`}
         aria-label="بستن"
       >
         <X className="h-5 w-5" />
@@ -86,7 +90,7 @@ export function ImageZoomOverlay({
           <button
             type="button"
             onClick={onPrevious}
-            className="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-slate-700/80 text-white backdrop-blur-sm transition-colors hover:bg-slate-800"
+            className={`${overlayControlClassName} right-4 top-1/2 h-12 w-12 -translate-y-1/2`}
             aria-label={prevLabel}
             title={prevLabel}
           >
@@ -95,14 +99,14 @@ export function ImageZoomOverlay({
           <button
             type="button"
             onClick={onNext}
-            className="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-slate-700/80 text-white backdrop-blur-sm transition-colors hover:bg-slate-800"
+            className={`${overlayControlClassName} left-4 top-1/2 h-12 w-12 -translate-y-1/2`}
             aria-label={nextLabel}
             title={nextLabel}
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
-          <div className="absolute bottom-4 right-1/2 z-20 translate-x-1/2 rounded-full bg-slate-700/80 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm">
-            {currentIndex + 1} / {totalCount}
+          <div className="absolute bottom-4 right-1/2 z-20 translate-x-1/2 rounded-full border border-white/70 bg-white/82 px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.16)] backdrop-blur-xl">
+            {formatNumberFa(currentIndex + 1)} / {formatNumberFa(totalCount)}
           </div>
         </>
       ) : null}

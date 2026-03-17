@@ -2,6 +2,8 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FestivalStatus, Image } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
 import { ImageRepository } from '../repositories/image.repository';
 import { FestivalRepository } from '../../festivals/repositories/festival.repository';
 import { UploadImageInput } from '../dto/upload-image.input';
@@ -115,5 +117,35 @@ export class ImageWriteService {
     }
 
     return updatedImage;
+  }
+
+  async deleteImage(imageId: string): Promise<Image> {
+    const image = await this.imageRepository.findById(imageId);
+    if (!image) {
+      throw new NotFoundException('تصویر یافت نشد');
+    }
+
+    const deletedImage = await this.imageRepository.delete(imageId);
+    await Promise.allSettled(
+      Array.from(new Set([image.url, ...(image.galleryUrls ?? [])])).map((url) =>
+        this.removeUploadedFile(url),
+      ),
+    );
+    return deletedImage;
+  }
+
+  private async removeUploadedFile(url: string | null | undefined): Promise<void> {
+    if (!url || !url.startsWith('/uploads/')) {
+      return;
+    }
+
+    const relativePath = url.replace(/^\/uploads\//, '');
+    const absolutePath = join(process.cwd(), 'uploads', relativePath);
+
+    try {
+      await unlink(absolutePath);
+    } catch {
+      // Ignore missing files so DB deletion remains source of truth.
+    }
   }
 }

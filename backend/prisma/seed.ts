@@ -120,11 +120,12 @@ async function main() {
 
   const user8 = await prisma.user.upsert({
     where: { phone: '09124445566' },
-    update: {},
+    update: { judgeLevel: 7 },
     create: {
       phone: '09124445566',
       passwordHash: defaultPasswordHash,
       role: Role.JUDGE,
+      judgeLevel: 7,
       gender: Gender.FEMALE,
       realName: 'الهام رضوی',
       displayName: 'الهام هنر',

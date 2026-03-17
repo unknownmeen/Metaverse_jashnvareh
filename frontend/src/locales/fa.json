@@ -129,6 +129,7 @@
     "next_image": "عکس بعدی",
     "remove_featured": "برداشتن از منتخب",
     "set_featured": "انتخاب به عنوان منتخب",
+    "delete_comment": "حذف پیام",
     "admin_featured": "منتخب جشنواره",
     "owner": "صاحب اثر",
     "unknown": "نامشخص",
@@ -177,7 +178,13 @@
     "no_results": "با این فیلتر تصویری پیدا نشد."
   },
   "image_card": {
-    "view_details": "مشاهده جزئیات عکس"
+    "view_details": "مشاهده جزئیات عکس",
+    "delete_image": "حذف تصویر",
+    "delete_confirm_title": "حذف تصویر",
+    "delete_confirm": "آیا از حذف این تصویر مطمئن هستید؟ تمام نظرات و امتیازهای مرتبط با آن نیز حذف خواهند شد. این عمل قابل بازگشت نیست.",
+    "delete_action": "حذف تصویر",
+    "deleting": "در حال حذف...",
+    "delete_error": "خطا در حذف تصویر"
   },
   "stream_status": {
     "open": "باز",
@@ -237,6 +244,7 @@
     "loading": "در حال بارگذاری...",
     "logging_in": "در حال ورود...",
     "save": "ذخیره شد!",
+    "close": "بستن",
     "field_required": "این فیلد الزامی است.",
     "fill_required_fields": "لطفاً فیلدهای الزامی را پر کنید."
   },
@@ -246,10 +254,10 @@
   },
   "role": {
     "admin": "دبیر",
-    "judge": "داور سطح ۱",
-    "judge_level_1": "داور سطح ۱",
-    "judge_level_2": "داور سطح ۲",
-    "judge_level_3": "داور سطح ۳",
+    "judge": "داور",
+    "judge_level_1": "داور",
+    "judge_level_2": "داور",
+    "judge_level_3": "داور",
     "user": "کاربر",
     "super_admin": "دبیر کل"
   },
@@ -263,6 +271,8 @@
     "password": "رمز عبور",
     "password_placeholder": "حداقل ۶ کاراکتر",
     "role": "نقش",
+    "judge_level": "سطح داور (۱ تا ۱۰)",
+    "score_weight": "وزن امتیاز",
     "real_name": "نام و نام خانوادگی (اختیاری)",
     "real_name_placeholder": "نام واقعی",
     "display_name": "نام نمایشی",
@@ -277,6 +287,8 @@
     "selected_count": "{{count}} کاربر انتخاب شده",
     "change_roles_batch": "تغییر نقش انتخاب‌شدگان",
     "delete_selected": "حذف انتخاب‌شدگان",
+    "increase_level": "افزایش سطح",
+    "decrease_level": "کاهش سطح",
     "edit_phone": "ویرایش شماره",
     "no_users": "هنوز کاربری ثبت نشده است.",
     "add_first": "اولین کاربر را اضافه کنید.",

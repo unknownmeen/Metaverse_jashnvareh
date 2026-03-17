@@ -19,6 +19,7 @@ export interface User {
   id: string;
   phone: string;
   role: UserRole;
+  judgeLevel?: number | null;
   gender: Gender;
   realName?: string | null;
   displayName?: string | null;

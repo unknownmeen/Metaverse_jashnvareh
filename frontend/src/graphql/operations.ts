@@ -7,6 +7,7 @@ export const USER_FRAGMENT = gql`
     id
     phone
     role
+    judgeLevel
     gender
     realName
     displayName
@@ -275,6 +276,14 @@ export const TOGGLE_TOP_IMAGE_MUTATION = gql`
   ${IMAGE_FRAGMENT}
 `;
 
+export const DELETE_IMAGE_MUTATION = gql`
+  mutation DeleteImage($imageId: ID!) {
+    deleteImage(imageId: $imageId) {
+      id
+    }
+  }
+`;
+
 // ─── Comments ─────────────────────────────────────────────────
 
 export const GET_IMAGE_COMMENTS_QUERY = gql`
@@ -311,6 +320,14 @@ export const ADD_JUDGE_REVIEW_MUTATION = gql`
     }
   }
   ${COMMENT_FRAGMENT}
+`;
+
+export const DELETE_COMMENT_MUTATION = gql`
+  mutation DeleteComment($commentId: ID!) {
+    deleteComment(commentId: $commentId) {
+      id
+    }
+  }
 `;
 
 // ─── Ratings ──────────────────────────────────────────────────

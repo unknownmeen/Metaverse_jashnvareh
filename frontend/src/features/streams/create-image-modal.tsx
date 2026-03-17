@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
+import { toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { resolveMediaUrl } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
@@ -155,7 +156,7 @@ export function CreateImageModal({ open, onClose, streamName, onComplete }: Crea
                 <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
                   <p>{t("image_upload.max_200_chars")}</p>
                   <span>
-                    {prompt.length} / {MAX_DESCRIPTION_LENGTH}
+                    {toPersianDigits(prompt.length)} / {toPersianDigits(MAX_DESCRIPTION_LENGTH)}
                   </span>
                 </div>
               </div>

@@ -21,12 +21,4 @@ export class RatingReadService {
   async getJudgeRating(imageId: string, userId: string) {
     return this.ratingRepository.findByImageAndUser(imageId, userId, RatingCategory.JUDGE);
   }
-
-  async getCommentRating(imageId: string, userId: string, isJudgeReview: boolean) {
-    return this.ratingRepository.findByImageAndUser(
-      imageId,
-      userId,
-      isJudgeReview ? RatingCategory.JUDGE : RatingCategory.USER,
-    );
-  }
 }

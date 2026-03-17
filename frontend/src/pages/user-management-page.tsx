@@ -1,5 +1,7 @@
 import { type FormEvent, useMemo, useState } from "react";
 import {
+  ChevronDown,
+  ChevronUp,
   Loader2,
   Plus,
   Search,
@@ -7,6 +9,7 @@ import {
   UserPlus,
   SquarePen,
   ShieldAlert,
+  X,
 } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { createPortal } from "react-dom";
@@ -23,8 +26,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatPhoneFa, formatDateFa, toEnglishDigits } from "@/lib/format";
+import { formatPhoneFa, formatDateFa, toEnglishDigits, toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { isJudgeRole, normalizeJudgeLevel, normalizeJudgeRole } from "@/lib/roles";
 import {
   GET_ALL_USERS_QUERY,
   CREATE_USERS_MUTATION,
@@ -35,15 +39,18 @@ import {
 import type { User } from "@/types/models";
 import type { UserRole, Gender } from "@/types/models";
 
-const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "JUDGE_LEVEL_1", "JUDGE_LEVEL_2", "JUDGE_LEVEL_3", "USER"];
+const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "JUDGE", "USER"];
 const GENDERS: Gender[] = ["MALE", "FEMALE"];
-const ROLE_FILTERS: Array<UserRole | "ALL"> = ["ALL", "ADMIN", "JUDGE_LEVEL_1", "JUDGE_LEVEL_2", "JUDGE_LEVEL_3", "USER"];
+const ROLE_FILTERS: Array<UserRole | "ALL"> = ["ALL", "ADMIN", "JUDGE", "USER"];
+const MIN_JUDGE_LEVEL = 1;
+const MAX_JUDGE_LEVEL = 10;
 
 interface NewUserRow {
   id: string;
   phone: string;
   password: string;
   role: UserRole;
+  judgeLevel: number;
   gender: Gender;
   realName: string;
   displayName: string;
@@ -58,7 +65,7 @@ function RoleSelect({
   onValueChange: (v: UserRole) => void;
   className?: string;
 }) {
-  const normalizedValue = value === "JUDGE" ? "JUDGE_LEVEL_1" : value;
+  const normalizedValue = normalizeJudgeRole(value);
   return (
     <Select value={normalizedValue} onValueChange={(v) => onValueChange(v as UserRole)}>
       <SelectTrigger className={className}>
@@ -72,6 +79,58 @@ function RoleSelect({
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+function JudgeLevelInput({
+  value,
+  onChange,
+  className,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  className?: string;
+}) {
+  const safeValue = normalizeJudgeLevel(value);
+  const stepUp = () => onChange(Math.min(MAX_JUDGE_LEVEL, safeValue + 1));
+  const stepDown = () => onChange(Math.max(MIN_JUDGE_LEVEL, safeValue - 1));
+  return (
+    <div className={`flex h-11 items-center overflow-hidden rounded-xl border border-input bg-white ${className ?? ""}`}>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={toPersianDigits(safeValue)}
+        onChange={(e) => {
+          const englishValue = toEnglishDigits(e.target.value).replace(/\D/g, "");
+          if (!englishValue) {
+            onChange(MIN_JUDGE_LEVEL);
+            return;
+          }
+          onChange(normalizeJudgeLevel(Number(englishValue)));
+        }}
+        className="h-full w-full border-0 bg-transparent px-3 text-center text-sm font-semibold text-slate-800 outline-none"
+      />
+      <div className="flex h-full flex-col border-r border-slate-200">
+        <button
+          type="button"
+          onClick={stepUp}
+          className="flex h-1/2 w-8 items-center justify-center text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          aria-label={t("user_management.increase_level")}
+          title={t("user_management.increase_level")}
+        >
+          <ChevronUp className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={stepDown}
+          className="flex h-1/2 w-8 items-center justify-center border-t border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          aria-label={t("user_management.decrease_level")}
+          title={t("user_management.decrease_level")}
+        >
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -122,9 +181,7 @@ export function UserManagementPage() {
   const users = useMemo(() => {
     let list = allUsers;
     if (roleFilter !== "ALL") {
-      list = roleFilter.startsWith("JUDGE_LEVEL")
-        ? list.filter((u) => u.role === roleFilter || (roleFilter === "JUDGE_LEVEL_1" && u.role === "JUDGE"))
-        : list.filter((u) => u.role === roleFilter);
+      list = list.filter((u) => normalizeJudgeRole(u.role) === roleFilter);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.trim();
@@ -143,10 +200,20 @@ export function UserManagementPage() {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchRole, setBatchRole] = useState<UserRole | null>(null);
+  const [batchJudgeLevel, setBatchJudgeLevel] = useState(1);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addModalError, setAddModalError] = useState<string | null>(null);
   const [newRows, setNewRows] = useState<NewUserRow[]>([
-    { id: crypto.randomUUID(), phone: "", password: "", role: "USER", gender: "MALE", realName: "", displayName: "" },
+    {
+      id: crypto.randomUUID(),
+      phone: "",
+      password: "",
+      role: "USER",
+      judgeLevel: 1,
+      gender: "MALE",
+      realName: "",
+      displayName: "",
+    },
   ]);
   const [editPhoneUser, setEditPhoneUser] = useState<User | null>(null);
   const [editPhoneValue, setEditPhoneValue] = useState("");
@@ -183,7 +250,16 @@ export function UserManagementPage() {
   const addNewRow = () => {
     setNewRows((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), phone: "", password: "", role: "USER", gender: "MALE", realName: "", displayName: "" },
+      {
+        id: crypto.randomUUID(),
+        phone: "",
+        password: "",
+        role: "USER",
+        judgeLevel: 1,
+        gender: "MALE",
+        realName: "",
+        displayName: "",
+      },
     ]);
   };
 
@@ -191,7 +267,11 @@ export function UserManagementPage() {
     setNewRows((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const updateNewRow = (id: string, field: keyof NewUserRow, value: string | UserRole | Gender) => {
+  const updateNewRow = (
+    id: string,
+    field: keyof NewUserRow,
+    value: string | UserRole | Gender | number,
+  ) => {
     setAddModalError(null);
     setNewRows((prev) =>
       prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
@@ -222,7 +302,8 @@ export function UserManagementPage() {
           inputs: valid.map((r) => ({
             phone: toEnglishDigits(r.phone).replace(/\D/g, ""),
             password: toEnglishDigits(r.password),
-            role: r.role,
+            role: normalizeJudgeRole(r.role),
+            judgeLevel: isJudgeRole(r.role) ? normalizeJudgeLevel(r.judgeLevel) : undefined,
             gender: r.gender,
             realName: r.realName.trim() || undefined,
             displayName: r.gender === "FEMALE" ? r.displayName.trim() || undefined : undefined,
@@ -232,7 +313,18 @@ export function UserManagementPage() {
       setMessage({ type: "success", text: t("user_management.success") });
       setAddModalOpen(false);
       setAddModalError(null);
-      setNewRows([{ id: crypto.randomUUID(), phone: "", password: "", role: "USER", gender: "MALE", realName: "", displayName: "" }]);
+      setNewRows([
+        {
+          id: crypto.randomUUID(),
+          phone: "",
+          password: "",
+          role: "USER",
+          judgeLevel: 1,
+          gender: "MALE",
+          realName: "",
+          displayName: "",
+        },
+      ]);
       setTimeout(() => setMessage(null), 3000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t("user_management.error");
@@ -245,12 +337,17 @@ export function UserManagementPage() {
     try {
       await changeRoles({
         variables: {
-          changes: Array.from(selectedIds).map((userId) => ({ userId, role: batchRole })),
+          changes: Array.from(selectedIds).map((userId) => ({
+            userId,
+            role: normalizeJudgeRole(batchRole),
+            judgeLevel: isJudgeRole(batchRole) ? normalizeJudgeLevel(batchJudgeLevel) : undefined,
+          })),
         },
       });
       setMessage({ type: "success", text: t("user_management.success") });
       setSelectedIds(new Set());
       setBatchRole(null);
+      setBatchJudgeLevel(1);
       setTimeout(() => setMessage(null), 3000);
     } catch {
       setMessage({ type: "error", text: t("user_management.error") });
@@ -300,10 +397,18 @@ export function UserManagementPage() {
     }
   };
 
-  const changeUserRole = async (userId: string, role: UserRole) => {
+  const changeUserRole = async (userId: string, role: UserRole, judgeLevel?: number) => {
     try {
       await changeRoles({
-        variables: { changes: [{ userId, role }] },
+        variables: {
+          changes: [
+            {
+              userId,
+              role: normalizeJudgeRole(role),
+              judgeLevel: isJudgeRole(role) ? normalizeJudgeLevel(judgeLevel) : undefined,
+            },
+          ],
+        },
       });
       setMessage({ type: "success", text: t("user_management.success") });
       setTimeout(() => setMessage(null), 3000);
@@ -333,11 +438,27 @@ export function UserManagementPage() {
         <p className="text-sm text-slate-600">{t("user_management.desc")}</p>
       </div>
 
-      {message && (
-        <Alert variant={message.type} className="mb-6">
-          {message.text}
-        </Alert>
-      )}
+      {message
+        ? createPortal(
+            <div className="fixed left-4 top-4 z-[10000] w-[min(92vw,24rem)]">
+              <div className="relative animate-scale-in">
+                <Alert variant={message.type} className="pl-12 shadow-lg">
+                  {message.text}
+                </Alert>
+                <button
+                  type="button"
+                  onClick={() => setMessage(null)}
+                  className="absolute left-2 top-2 rounded-md p-1 text-slate-500 transition hover:bg-white/70 hover:text-slate-700"
+                  aria-label={t("common.close")}
+                  title={t("common.close")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-4">
@@ -382,9 +503,21 @@ export function UserManagementPage() {
           <div className="flex items-center gap-2">
             <RoleSelect
               value={batchRole ?? "USER"}
-              onValueChange={setBatchRole}
+              onValueChange={(nextRole) => {
+                setBatchRole(nextRole);
+                if (isJudgeRole(nextRole)) {
+                  setBatchJudgeLevel((prev) => normalizeJudgeLevel(prev));
+                }
+              }}
               className="w-36"
             />
+            {batchRole && isJudgeRole(batchRole) ? (
+              <JudgeLevelInput
+                value={batchJudgeLevel}
+                onChange={setBatchJudgeLevel}
+                className="w-28"
+              />
+            ) : null}
             <Button
               size="sm"
               variant="secondary"
@@ -433,6 +566,7 @@ export function UserManagementPage() {
                   <th className="p-4 text-xs font-semibold text-slate-500">{t("user_management.phone")}</th>
                   <th className="p-4 text-xs font-semibold text-slate-500">{t("user_management.real_name")}</th>
                   <th className="p-4 text-xs font-semibold text-slate-500">{t("user_management.role")}</th>
+                  <th className="p-4 text-center text-xs font-semibold text-slate-500">{t("user_management.score_weight")}</th>
                   <th className="p-4 text-xs font-semibold text-slate-500">{t("user_management.created_at")}</th>
                   <th className="p-4 text-xs font-semibold text-slate-500" />
                 </tr>
@@ -468,10 +602,21 @@ export function UserManagementPage() {
                     </td>
                     <td className="p-4">
                       <RoleSelect
-                        value={user.role}
-                        onValueChange={(role) => changeUserRole(user.id, role)}
+                        value={normalizeJudgeRole(user.role)}
+                        onValueChange={(role) => changeUserRole(user.id, role, user.judgeLevel ?? 1)}
                         className="min-w-[120px]"
                       />
+                    </td>
+                    <td className="p-4 text-center">
+                      {isJudgeRole(user.role) ? (
+                        <JudgeLevelInput
+                          value={user.judgeLevel ?? 1}
+                          onChange={(level) => changeUserRole(user.id, "JUDGE", level)}
+                          className="mx-auto w-24"
+                        />
+                      ) : (
+                        <span className="text-sm font-semibold text-violet-500">-</span>
+                      )}
                     </td>
                     <td className="p-4 text-sm text-slate-500">
                       {formatDateFa(user.createdAt)}
@@ -501,7 +646,11 @@ export function UserManagementPage() {
           if (!open) setAddModalError(null);
         }}
       >
-        <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto rounded-3xl p-6" dir="rtl">
+        <DialogContent
+          className="max-h-[90vh] max-w-xl overflow-y-auto rounded-3xl p-6"
+          dir="rtl"
+          onCloseAutoFocus={(event) => event.preventDefault()}
+        >
           <DialogHeader className="text-right">
             <DialogTitle>{t("user_management.add_users")}</DialogTitle>
           </DialogHeader>
@@ -572,22 +721,34 @@ export function UserManagementPage() {
                         className="h-11"
                       />
                     </div>
-                    {row.gender === "FEMALE" && (
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="mb-2 block text-sm font-medium text-slate-600">
-                          {t("user_management.display_name")} *
-                        </label>
-                        <Input
-                          value={row.displayName}
-                          onChange={(e) => updateNewRow(row.id, "displayName", e.target.value)}
-                          placeholder={t("user_management.display_name_placeholder")}
-                          className="h-11"
-                          required
-                        />
-                      </div>
-                      {newRows.length > 1 && (
-                        <div className="flex items-end">
+                    <div className="space-y-3">
+                      {isJudgeRole(row.role) ? (
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-600">
+                            {t("user_management.judge_level")}
+                          </label>
+                          <JudgeLevelInput
+                            value={row.judgeLevel}
+                            onChange={(value) => updateNewRow(row.id, "judgeLevel", value)}
+                          />
+                        </div>
+                      ) : null}
+                      {row.gender === "FEMALE" ? (
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-600">
+                            {t("user_management.display_name")} *
+                          </label>
+                          <Input
+                            value={row.displayName}
+                            onChange={(e) => updateNewRow(row.id, "displayName", e.target.value)}
+                            placeholder={t("user_management.display_name_placeholder")}
+                            className="h-11"
+                            required
+                          />
+                        </div>
+                      ) : null}
+                      {newRows.length > 1 ? (
+                        <div className="flex justify-end">
                           <Button
                             type="button"
                             variant="ghost"
@@ -598,9 +759,8 @@ export function UserManagementPage() {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -625,7 +785,11 @@ export function UserManagementPage() {
       </Dialog>
 
       <Dialog open={!!editPhoneUser} onOpenChange={(open) => !open && setEditPhoneUser(null)}>
-        <DialogContent className="max-w-sm rounded-2xl p-6" dir="rtl">
+        <DialogContent
+          className="max-w-sm rounded-2xl p-6"
+          dir="rtl"
+          onCloseAutoFocus={(event) => event.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>{t("user_management.edit_phone")}</DialogTitle>
           </DialogHeader>

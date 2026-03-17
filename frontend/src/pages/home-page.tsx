@@ -24,6 +24,7 @@ export function HomePage() {
 
   const myImages = imagesData?.myImages ?? [];
   const festivals = festivalsData?.festivals ?? [];
+  const userStreamCount = new Set(myImages.map((img) => img.festivalId)).size;
 
   return (
     <div className="space-y-5">
@@ -40,7 +41,7 @@ export function HomePage() {
                 <span className="font-bold text-primary-600">{formatNumberFa(myImages.length)}</span> {t("home.image_label")}
               </div>
               <div className="rounded-2xl bg-white/70 px-4 py-2 text-sm">
-                <span className="font-bold text-emerald-700">{formatNumberFa(festivals.length)}</span> {t("home.stream_label")}
+                <span className="font-bold text-emerald-700">{formatNumberFa(userStreamCount)}</span> {t("home.stream_label")}
               </div>
             </div>
           </div>

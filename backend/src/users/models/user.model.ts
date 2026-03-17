@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { Role, Gender } from '../../common/enums';
 
 @ObjectType('User')
@@ -11,6 +11,9 @@ export class UserModel {
 
   @Field(() => Role)
   role: Role;
+
+  @Field(() => Int, { nullable: true })
+  judgeLevel?: number;
 
   @Field(() => Gender)
   gender: Gender;

@@ -34,7 +34,31 @@ export class RatingRepository {
   }
 
   async getJudgeAverageRating(imageId: string): Promise<{ average: number; count: number }> {
-    return this.getAverageRating(imageId, RatingCategory.JUDGE);
+    const ratings = await this.prisma.rating.findMany({
+      where: { imageId, category: RatingCategory.JUDGE },
+      select: {
+        score: true,
+        user: { select: { judgeLevel: true } },
+      },
+    });
+
+    if (ratings.length === 0) {
+      return { average: 0, count: 0 };
+    }
+
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (const rating of ratings) {
+      const rawWeight = rating.user?.judgeLevel ?? 1;
+      const weight = Math.min(10, Math.max(1, rawWeight));
+      weightedSum += rating.score * weight;
+      totalWeight += weight;
+    }
+
+    return {
+      average: totalWeight > 0 ? weightedSum / totalWeight : 0,
+      count: ratings.length,
+    };
   }
 
   async create(data: Prisma.RatingCreateInput): Promise<Rating> {

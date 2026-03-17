@@ -9,9 +9,18 @@ export function isJudgeRole(role: UserRole): boolean {
   );
 }
 
+export function normalizeJudgeRole(role: UserRole): UserRole {
+  return isJudgeRole(role) ? "JUDGE" : role;
+}
+
 export function getJudgeMaxScore(role: UserRole): number {
-  if (role === "JUDGE" || role === "JUDGE_LEVEL_1") return 3;
-  if (role === "JUDGE_LEVEL_2") return 5;
-  if (role === "JUDGE_LEVEL_3") return 7;
+  if (!isJudgeRole(role)) return 5;
   return 5;
+}
+
+export function normalizeJudgeLevel(level: number | null | undefined): number {
+  if (!level) return 1;
+  if (level < 1) return 1;
+  if (level > 10) return 10;
+  return level;
 }

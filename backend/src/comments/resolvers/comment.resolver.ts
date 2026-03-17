@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID, ResolveField, Parent } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, ResolveField, Parent, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { Role, User } from '@prisma/client';
 import { CommentModel } from '../models/comment.model';
@@ -9,7 +9,6 @@ import { AddCommentInput } from '../dto/add-comment.input';
 import { GqlAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { UserReadService } from '../../users/services/user-read.service';
-import { RatingReadService } from '../../ratings/services/rating-read.service';
 
 @Resolver(() => CommentModel)
 export class CommentResolver {
@@ -17,7 +16,6 @@ export class CommentResolver {
     private readonly commentReadService: CommentReadService,
     private readonly commentWriteService: CommentWriteService,
     private readonly userReadService: UserReadService,
-    private readonly ratingReadService: RatingReadService,
   ) {}
 
   @Query(() => [CommentModel], { name: 'imageComments' })
@@ -58,28 +56,28 @@ export class CommentResolver {
     return this.commentWriteService.addJudgeReview(user, input);
   }
 
+  @Mutation(() => CommentModel, { name: 'deleteComment' })
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  async deleteComment(
+    @CurrentUser() user: User,
+    @Args('commentId', { type: () => ID }) commentId: string,
+  ) {
+    return this.commentWriteService.deleteComment(user, commentId);
+  }
+
   @ResolveField('author', () => UserModel)
   async resolveAuthor(@Parent() comment: { userId: string }) {
     return this.userReadService.findById(comment.userId);
   }
 
-  @ResolveField('ratingScore', () => Number, { nullable: true })
-  async resolveRatingScore(@Parent() comment: { imageId: string; userId: string; isJudgeReview: boolean }) {
-    const rating = await this.ratingReadService.getCommentRating(
-      comment.imageId,
-      comment.userId,
-      comment.isJudgeReview,
-    );
-    return rating?.score ?? null;
+  @ResolveField('ratingScore', () => Int, { nullable: true })
+  resolveRatingScore(@Parent() comment: { ratingScore?: number | null }) {
+    return comment.ratingScore ?? null;
   }
 
-  @ResolveField('ratingMaxScore', () => Number, { nullable: true })
-  async resolveRatingMaxScore(@Parent() comment: { imageId: string; userId: string; isJudgeReview: boolean }) {
-    const rating = await this.ratingReadService.getCommentRating(
-      comment.imageId,
-      comment.userId,
-      comment.isJudgeReview,
-    );
-    return rating?.maxScore ?? null;
+  @ResolveField('ratingMaxScore', () => Int, { nullable: true })
+  resolveRatingMaxScore(@Parent() comment: { ratingMaxScore?: number | null }) {
+    return comment.ratingMaxScore ?? null;
   }
 }

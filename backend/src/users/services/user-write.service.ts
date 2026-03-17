@@ -1,11 +1,12 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Gender, User } from '@prisma/client';
+import { Gender, Role, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from '../repositories/user.repository';
 import { UpdateProfileInput } from '../dto/update-profile.input';
 import { CreateUserInput } from '../dto/create-user.input';
 import { UpdateUserByIdInput } from '../dto/update-user-by-id.input';
 import { ChangeRoleInput } from '../dto/change-role.input';
+import { isJudgeRole, normalizeJudgeLevel } from '../../common/utils/role.util';
 
 @Injectable()
 export class UserWriteService {
@@ -51,6 +52,9 @@ export class UserWriteService {
     const results: User[] = [];
     for (const input of inputs) {
       const gender = input.gender ?? Gender.MALE;
+      const judgeRole = isJudgeRole(input.role);
+      const nextRole = judgeRole ? Role.JUDGE : input.role;
+      const nextJudgeLevel = judgeRole ? normalizeJudgeLevel(input.judgeLevel) : null;
       if (gender === Gender.FEMALE && !input.displayName?.trim()) {
         throw new BadRequestException('برای کاربران خانم، نام نمایشی الزامی است.');
       }
@@ -62,7 +66,8 @@ export class UserWriteService {
       const user = await this.userRepository.create({
         phone: input.phone,
         passwordHash,
-        role: input.role,
+        role: nextRole,
+        judgeLevel: nextJudgeLevel,
         gender,
         realName: input.realName?.trim() || null,
         displayName: input.displayName?.trim() || null,
@@ -97,8 +102,17 @@ export class UserWriteService {
 
   async changeRoles(changes: ChangeRoleInput[]): Promise<User[]> {
     const results: User[] = [];
-    for (const { userId, role } of changes) {
-      const user = await this.userRepository.update(userId, { role });
+    for (const { userId, role, judgeLevel } of changes) {
+      const existing = await this.userRepository.findById(userId);
+      if (!existing) {
+        throw new NotFoundException(`کاربر با شناسه ${userId} یافت نشد`);
+      }
+      const judgeRole = isJudgeRole(role);
+      const nextRole = judgeRole ? Role.JUDGE : role;
+      const nextJudgeLevel = judgeRole
+        ? normalizeJudgeLevel(judgeLevel ?? existing.judgeLevel ?? 1)
+        : null;
+      const user = await this.userRepository.update(userId, { role: nextRole, judgeLevel: nextJudgeLevel });
       results.push(user);
     }
     return results;

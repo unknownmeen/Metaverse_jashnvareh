@@ -19,7 +19,8 @@ export function StarRating({
   max = 5,
   color = "amber",
 }: StarRatingProps) {
-  const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
+  const iconSize = size === "sm" ? "h-3.5 w-3.5 sm:h-4 sm:w-4" : "h-4 w-4 sm:h-5 sm:w-5";
+  const buttonPadding = size === "sm" ? "p-0.5 sm:p-1" : "p-1";
   const baseColor = color === "purple" ? "text-violet-200" : "text-amber-300";
   const activeColor = color === "purple" ? "text-violet-500" : "text-amber-500";
 
@@ -28,7 +29,7 @@ export function StarRating({
       {Array.from({ length: max }, (_, index) => index + 1).map((item) => (
         <button
           className={cn(
-            `rounded-full p-1 transition hover:scale-105 ${baseColor}`,
+            `rounded-full transition hover:scale-105 ${buttonPadding} ${baseColor}`,
             readonly && "pointer-events-none",
             value >= item && activeColor,
           )}

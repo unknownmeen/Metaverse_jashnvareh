@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { CloudUpload, Eye, RotateCcw, Trash2, X } from "lucide-react";
 
+import { toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
@@ -282,7 +283,7 @@ export function ImageUploadModal({ open, onOpenChange, onComplete }: ImageUpload
                     ) : (
                       <>
                         <span className="text-sm font-medium text-slate-600">
-                          {Math.round(entry.progress)}٪
+                          {toPersianDigits(Math.round(entry.progress))}٪
                         </span>
                         <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
                           <div
@@ -351,7 +352,7 @@ export function ImageUploadModal({ open, onOpenChange, onComplete }: ImageUpload
                 <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
                   <p>حداکثر ۲۰۰ کاراکتر</p>
                   <span>
-                    {description.length} / {MAX_DESCRIPTION_LENGTH}
+                    {toPersianDigits(description.length)} / {toPersianDigits(MAX_DESCRIPTION_LENGTH)}
                   </span>
                 </div>
               </div>

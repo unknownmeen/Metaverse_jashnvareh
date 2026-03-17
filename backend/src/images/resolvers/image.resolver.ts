@@ -23,6 +23,7 @@ import { FestivalReadService } from '../../festivals/services/festival-read.serv
 import { UploadImageInput } from '../dto/upload-image.input';
 import { GqlAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser, Roles } from '../../common/decorators';
+import { canSeeJudgeSignals } from '../../common/utils/role.util';
 
 @Resolver(() => ImageModel)
 export class ImageResolver {
@@ -68,6 +69,13 @@ export class ImageResolver {
     return this.imageWriteService.toggleTopImage(user.id, imageId);
   }
 
+  @Mutation(() => ImageModel, { name: 'deleteImage' })
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  async deleteImage(@Args('imageId', { type: () => ID }) imageId: string) {
+    return this.imageWriteService.deleteImage(imageId);
+  }
+
   /**
    * Resolve the `author` field on Image.
    * The User model's `visibleName` field resolver will then
@@ -85,7 +93,14 @@ export class ImageResolver {
   }
 
   @ResolveField('judgeAverageRating', () => Float, { nullable: true })
-  async resolveJudgeAverageRating(@Parent() image: { id: string }): Promise<number | null> {
+  async resolveJudgeAverageRating(
+    @Parent() image: { id: string },
+    @Context() ctx: { req: { user?: User } },
+  ): Promise<number | null> {
+    const user = ctx.req?.user;
+    if (!user || !canSeeJudgeSignals(user.role)) {
+      return null;
+    }
     const result = await this.ratingReadService.getJudgeAverageRating(image.id);
     return result.count > 0 ? result.average : null;
   }
@@ -96,7 +111,14 @@ export class ImageResolver {
   }
 
   @ResolveField('judgeRatingCount', () => Int)
-  async resolveJudgeRatingCount(@Parent() image: { id: string }): Promise<number> {
+  async resolveJudgeRatingCount(
+    @Parent() image: { id: string },
+    @Context() ctx: { req: { user?: User } },
+  ): Promise<number> {
+    const user = ctx.req?.user;
+    if (!user || !canSeeJudgeSignals(user.role)) {
+      return 0;
+    }
     const result = await this.ratingReadService.getJudgeAverageRating(image.id);
     return result.count;
   }
