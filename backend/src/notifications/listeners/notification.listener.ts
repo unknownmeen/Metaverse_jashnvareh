@@ -4,6 +4,12 @@ import { NotificationType } from '@prisma/client';
 import { NotificationRepository } from '../repositories/notification.repository';
 import { ImageTopSelectedEvent } from '../../images/events/image-top-selected.event';
 
+const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+
+function toPersianDigits(value: number | string): string {
+  return String(value).replace(/\d/g, (d) => FA_DIGITS[Number(d)] ?? d);
+}
+
 /**
  * Event Listener — Pub/Sub pattern.
  *
@@ -61,7 +67,7 @@ export class NotificationListener {
   }) {
     await this.notificationRepository.create({
       type: NotificationType.RATING,
-      text: `برای تصویر شما امتیاز ${payload.score} از ۵ ثبت شد.`,
+      text: `برای تصویر شما امتیاز ${toPersianDigits(payload.score)} از ۵ ثبت شد.`,
       userId: payload.imageOwnerId,
       senderId: payload.raterId,
       imageId: payload.imageId,

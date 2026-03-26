@@ -19,16 +19,22 @@ import type { Festival, ImageItem } from "@/types/models";
 
 function AddImagePlaceholder({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="group block h-full w-full text-right outline-none focus:outline-none focus:ring-0">
-      <div className="flex h-full min-h-[280px] overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/60">
-        <div className="flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/80 p-6 transition-all group-hover:border-primary-300 group-hover:bg-primary-50/60">
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm transition-all group-hover:bg-primary-500 group-hover:shadow-lg group-hover:shadow-primary-200">
-              <Plus className="h-7 w-7 text-slate-300 transition-colors group-hover:text-white" />
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex h-full min-h-0 w-full min-w-0 justify-self-stretch self-stretch text-right outline-none focus:outline-none focus:ring-0"
+    >
+      <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white text-right shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:border-slate-100 hover:shadow-xl hover:shadow-slate-200/60">
+        <div className="relative min-h-[14rem] flex-1 overflow-hidden rounded-3xl bg-slate-100">
+          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/80 p-6 transition-all group-hover:border-primary-300 group-hover:bg-primary-50/60">
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm transition-all group-hover:bg-primary-500 group-hover:shadow-lg group-hover:shadow-primary-200">
+                <Plus className="h-7 w-7 text-slate-300 transition-colors group-hover:text-white" />
+              </div>
+              <span className="text-sm font-semibold text-slate-400 transition-colors group-hover:text-primary-600">
+                {t("stream_explore.upload_new")}
+              </span>
             </div>
-            <span className="text-sm font-semibold text-slate-400 transition-colors group-hover:text-primary-600">
-              {t("stream_explore.upload_new")}
-            </span>
           </div>
         </div>
       </div>
@@ -140,56 +146,53 @@ export function StreamExplorePage() {
               <StreamStatusBadge status={festival.status} />
             </div>
 
-            <CardDescription className="text-justify">{festival.conceptText}</CardDescription>
+            {festival.conceptText?.trim() ? (
+              <CardDescription className="text-justify">{festival.conceptText}</CardDescription>
+            ) : null}
 
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-primary-50">
-              <div className="flex items-center justify-between border-b border-primary-100 px-3 py-1.5">
-                <span className="text-xs font-semibold text-primary-600">{t("stream_explore.concept_alt")}</span>
-                {festival.conceptMediaUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setConceptFullscreenOpen(true)}
-                    className="flex items-center gap-1 rounded-md p-1.5 text-primary-600 transition-colors hover:bg-primary-100 hover:text-primary-700"
-                    title={t("stream_explore.concept_fullscreen")}
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-              {festival.conceptMediaUrl ? (
-                festival.conceptMediaType === "VIDEO" ? (
-                  <video className="w-full" controls src={resolveMediaUrl(festival.conceptMediaUrl)} />
-                ) : (
-                  <img alt={t("stream_explore.concept_alt")} className="h-52 w-full object-cover" src={resolveMediaUrl(festival.conceptMediaUrl)} />
-                )
-              ) : (
-                <div className="flex min-h-[120px] items-center justify-center p-4">
-                  <p className="text-sm text-slate-400">{t("stream_explore.concept_empty")}</p>
+            {festival.conceptMediaUrl ? (
+              <>
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-primary-50">
+                  <div className="flex items-center justify-between border-b border-primary-100 px-3 py-1.5">
+                    <span className="text-xs font-semibold text-primary-600">{t("stream_explore.concept_alt")}</span>
+                    <button
+                      type="button"
+                      onClick={() => setConceptFullscreenOpen(true)}
+                      className="flex items-center gap-1 rounded-md p-1.5 text-primary-600 transition-colors hover:bg-primary-100 hover:text-primary-700"
+                      title={t("stream_explore.concept_fullscreen")}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {festival.conceptMediaType === "VIDEO" ? (
+                    <video className="w-full" controls src={resolveMediaUrl(festival.conceptMediaUrl)} />
+                  ) : (
+                    <img alt={t("stream_explore.concept_alt")} className="h-52 w-full object-cover" src={resolveMediaUrl(festival.conceptMediaUrl)} />
+                  )}
                 </div>
-              )}
-            </div>
 
-            <Dialog onOpenChange={setConceptFullscreenOpen} open={conceptFullscreenOpen}>
-              <DialogContent className="max-h-[95vh] max-w-[95vw] border-0 bg-black/95 p-0 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:hover:text-white">
-                <div className="flex h-[85vh] w-full items-center justify-center p-4">
-                  {festival.conceptMediaUrl &&
-                    (festival.conceptMediaType === "VIDEO" ? (
-                      <video
-                        className="max-h-full max-w-full object-contain"
-                        controls
-                        autoPlay
-                        src={resolveMediaUrl(festival.conceptMediaUrl)}
-                      />
-                    ) : (
-                      <img
-                        alt={t("stream_explore.concept_alt")}
-                        className="max-h-full max-w-full object-contain"
-                        src={resolveMediaUrl(festival.conceptMediaUrl)}
-                      />
-                    ))}
-                </div>
-              </DialogContent>
-            </Dialog>
+                <Dialog onOpenChange={setConceptFullscreenOpen} open={conceptFullscreenOpen}>
+                  <DialogContent className="max-h-[95vh] max-w-[95vw] border-0 bg-black/95 p-0 [&>button]:text-white [&>button]:hover:bg-white/20 [&>button]:hover:text-white">
+                    <div className="flex h-[85vh] w-full items-center justify-center p-4">
+                      {festival.conceptMediaType === "VIDEO" ? (
+                        <video
+                          className="max-h-full max-w-full object-contain"
+                          controls
+                          autoPlay
+                          src={resolveMediaUrl(festival.conceptMediaUrl)}
+                        />
+                      ) : (
+                        <img
+                          alt={t("stream_explore.concept_alt")}
+                          className="max-h-full max-w-full object-contain"
+                          src={resolveMediaUrl(festival.conceptMediaUrl)}
+                        />
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
+            ) : null}
 
             <div className="rounded-2xl bg-primary-50/80 p-3 text-sm leading-6 text-muted-foreground">
               <h3 className="mb-1 font-semibold text-slate-700">{t("stream_explore.rules_title")}</h3>
@@ -246,7 +249,9 @@ export function StreamExplorePage() {
 
         <CardContent>
           <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {canUpload && <AddImagePlaceholder onClick={() => setDialogOpen(true)} />}
+            {canUpload && (
+              <AddImagePlaceholder onClick={() => setDialogOpen(true)} />
+            )}
 
             {filteredImages.length === 0 && !canUpload ? (
               <p className="col-span-full text-sm text-muted-foreground">{t("stream_explore.no_results")}</p>

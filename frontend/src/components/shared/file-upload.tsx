@@ -2,7 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { AlertCircle, CheckCircle, Eye, RotateCcw, Trash2, Upload, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatNumberFa } from "@/lib/format";
+import { formatNumberFa, toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { uploadFile } from "@/lib/upload";
 
@@ -261,7 +261,7 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(function Fi
               ) : (
                 <>
                   <span className="text-sm font-medium text-slate-600">
-                    {Math.round(entry.progress)}٪
+                    {toPersianDigits(Math.round(entry.progress))}٪
                   </span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
                     <div

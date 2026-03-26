@@ -33,7 +33,7 @@ export function t(key: string, params?: Record<string, string | number>): string
     return result.replace(/\{\{(\w+)\}\}/g, (_, name: string) => {
       if (!(name in params)) return `{{${name}}}`;
       const val = params[name];
-      return typeof val === "number" ? toPersianDigits(val) : String(val);
+      return toPersianDigits(String(val));
     });
   }
 

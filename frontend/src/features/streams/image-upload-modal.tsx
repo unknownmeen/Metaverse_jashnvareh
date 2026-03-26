@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { CloudUpload, Eye, RotateCcw, Trash2, X } from "lucide-react";
+import { ArrowLeft, CloudUpload, Eye, RotateCcw, Trash2, X } from "lucide-react";
 
 import { toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
@@ -310,11 +310,12 @@ export function ImageUploadModal({ open, onOpenChange, onComplete }: ImageUpload
 
             <DialogFooter className="flex flex-row-reverse gap-3 sm:flex-row-reverse">
               <Button
-                className="bg-gradient-to-l from-primary-500 to-primary-600 text-white shadow-primary-200 hover:shadow-lg"
+                className="inline-flex flex-row-reverse items-center gap-2 bg-gradient-to-l from-primary-500 to-primary-600 text-white shadow-primary-200 hover:shadow-lg"
                 disabled={!canProceed}
                 onClick={goToMetadata}
               >
                 {t("image_upload.next_step")}
+                <ArrowLeft className="h-4 w-4 shrink-0" />
               </Button>
               <Button onClick={() => handleClose(false)} variant="outline">
                 {t("image_upload.cancel_back")}

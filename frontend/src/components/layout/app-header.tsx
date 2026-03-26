@@ -294,7 +294,7 @@ function NotificationPanel({ open, onClose }: { open: boolean; onClose: () => vo
                 <span className="mt-0.5 text-xl">{getIcon(notification.type)}</span>
                 <div className="min-w-0 flex-1">
                   <p className={cn("text-right text-sm leading-relaxed", !notification.isRead ? "font-semibold text-slate-800" : "text-slate-600")}>
-                    {notification.text}
+                    {toPersianDigits(notification.text)}
                   </p>
                   <p className="mt-1 text-right text-xs text-slate-400">
                     {formatDateFa(notification.createdAt)} | {formatTimeFa(notification.createdAt)}

@@ -94,7 +94,7 @@ export function CreateImageModal({ open, onClose, streamName, onComplete }: Crea
                   {t("nav.festival")}: <span className="font-bold text-slate-800">{streamName}</span>
                 </p>
               </div>
-              {selectedUrls.length > 0 ? (
+              {selectedUrls.length > 1 ? (
                 <div>
                   <p className="mb-2 text-xs font-semibold text-slate-400">{t("image_upload.cover_select_label")}</p>
                   <div className="grid grid-cols-3 gap-3">
