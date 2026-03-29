@@ -1,9 +1,11 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Comment, RatingCategory, Role, User } from '@prisma/client';
 import { CommentRepository } from '../repositories/comment.repository';
 import { ImageRepository } from '../../images/repositories/image.repository';
 import { AddCommentInput } from '../dto/add-comment.input';
+import { ReplyToCommentInput } from '../dto/reply-to-comment.input';
+import { UpdateCommentInput } from '../dto/update-comment.input';
 import { isJudgeRole } from '../../common/utils/role.util';
 import { RatingRepository } from '../../ratings/repositories/rating.repository';
 
@@ -48,6 +50,51 @@ export class CommentWriteService {
         commenterName: user.realName,
       });
     }
+
+    return comment;
+  }
+
+  async addOwnerReply(user: User, input: ReplyToCommentInput): Promise<Comment> {
+    const image = await this.imageRepository.findById(input.imageId);
+    if (!image) {
+      throw new NotFoundException('تصویر یافت نشد');
+    }
+    if (image.userId !== user.id) {
+      throw new ForbiddenException('فقط صاحب اثر می‌تواند به نظرات پاسخ دهد');
+    }
+
+    const parent = await this.commentRepository.findById(input.parentCommentId);
+    if (!parent || parent.imageId !== input.imageId) {
+      throw new NotFoundException('نظر یافت نشد');
+    }
+    if (parent.parentCommentId != null) {
+      throw new BadRequestException('فقط می‌توانید به نظرات اصلی پاسخ دهید');
+    }
+    if (parent.userId === user.id) {
+      throw new ForbiddenException('نمی‌توانید به نظر خودتان پاسخ دهید');
+    }
+
+    const trimmed = input.text.trim();
+    if (trimmed.length < 5) {
+      throw new BadRequestException('متن پاسخ باید حداقل ۵ کاراکتر باشد');
+    }
+
+    const comment = await this.commentRepository.create({
+      text: trimmed,
+      isAdminReview: false,
+      isJudgeReview: false,
+      ratingScore: null,
+      ratingMaxScore: null,
+      image: { connect: { id: input.imageId } },
+      user: { connect: { id: user.id } },
+      parentComment: { connect: { id: input.parentCommentId } },
+    });
+
+    this.eventEmitter.emit('OWNER_REPLY_ADDED', {
+      imageId: image.id,
+      parentAuthorId: parent.userId,
+      replierId: user.id,
+    });
 
     return comment;
   }
@@ -119,14 +166,34 @@ export class CommentWriteService {
     return comment;
   }
 
-  async deleteComment(user: User, commentId: string): Promise<Comment> {
-    if (user.role !== Role.ADMIN && user.role !== Role.SUPER_ADMIN) {
-      throw new ForbiddenException('فقط دبیرها می‌توانند پیام را حذف کنند');
+  async updateComment(user: User, input: UpdateCommentInput): Promise<Comment> {
+    const comment = await this.commentRepository.findById(input.commentId);
+    if (!comment) {
+      throw new NotFoundException('پیام یافت نشد');
     }
 
+    const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
+    if (comment.userId !== user.id && !isAdmin) {
+      throw new ForbiddenException('فقط نویسنده یا دبیر می‌تواند این نظر را ویرایش کند');
+    }
+
+    const trimmed = input.text.trim();
+    if (trimmed.length < 5) {
+      throw new BadRequestException('متن نظر باید حداقل ۵ کاراکتر باشد');
+    }
+
+    return this.commentRepository.update(comment.id, { text: trimmed });
+  }
+
+  async deleteComment(user: User, commentId: string): Promise<Comment> {
     const comment = await this.commentRepository.findById(commentId);
     if (!comment) {
       throw new NotFoundException('پیام یافت نشد');
+    }
+
+    const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
+    if (comment.userId !== user.id && !isAdmin) {
+      throw new ForbiddenException('فقط نویسنده یا دبیر می‌تواند این نظر را حذف کند');
     }
 
     return this.commentRepository.delete(commentId);

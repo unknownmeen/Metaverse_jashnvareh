@@ -1,9 +1,18 @@
 import { CircleHelp, MapPinned, Sparkles } from "lucide-react";
+import { useQuery } from "@apollo/client/react";
 
+import { useAppStore } from "@/app/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GET_LATEST_PUBLISHED_RELEASE_QUERY } from "@/graphql/operations";
+import { toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import type { Release } from "@/types/models";
 
 export function HelpPage() {
+  const { openChangelog } = useAppStore();
+  const { data } = useQuery<{ latestPublishedRelease: Release | null }>(GET_LATEST_PUBLISHED_RELEASE_QUERY);
+  const latestVersion = data?.latestPublishedRelease?.version;
+
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -43,9 +52,26 @@ export function HelpPage() {
       </div>
 
       <Card className="border-white/70 bg-gradient-to-r from-primary-50 to-white">
-        <CardContent className="flex items-center gap-3 p-5 text-sm text-slate-700">
-          <Sparkles className="h-5 w-5 text-amber-500" />
-          {t("help.support")}
+        <CardContent className="space-y-3 p-5 text-sm text-slate-700">
+          <button
+            type="button"
+            onClick={() => openChangelog()}
+            className="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-2 text-right transition-colors hover:bg-primary-50"
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              <span className="font-medium text-slate-700">{t("help.whats_new")}</span>
+            </span>
+            {latestVersion ? (
+              <span className="inline-flex rounded-md bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">
+                {t("changelog.version_prefix")} {toPersianDigits(latestVersion)}
+              </span>
+            ) : null}
+          </button>
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-amber-500" />
+            {t("help.support")}
+          </div>
         </CardContent>
       </Card>
     </div>

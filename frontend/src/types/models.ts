@@ -73,6 +73,7 @@ export interface Comment {
   ratingMaxScore?: number | null;
   imageId: string;
   userId: string;
+  parentCommentId?: string | null;
   author: User;
   createdAt: string;
 }
@@ -94,6 +95,18 @@ export interface NotificationItem {
 export interface AverageRating {
   average: number;
   count: number;
+}
+
+export interface Release {
+  id: string;
+  version: string;
+  published: boolean;
+  publishedAt?: string | null;
+  features: string[];
+  improvements: string[];
+  bugFixes: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Input Types ─────────────────────────────────────────────

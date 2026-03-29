@@ -2,13 +2,16 @@ import { type FormEvent, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
+  Eye,
   Loader2,
+  Pencil,
   Plus,
+  Rocket,
   Search,
+  ShieldAlert,
+  SquarePen,
   Trash2,
   UserPlus,
-  SquarePen,
-  ShieldAlert,
   X,
 } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client/react";
@@ -16,6 +19,7 @@ import { createPortal } from "react-dom";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { ReleaseDrawer } from "@/components/release-drawer";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
@@ -26,24 +30,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAppStore } from "@/app/store";
 import { formatPhoneFa, formatDateFa, toEnglishDigits, toPersianDigits } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { isJudgeRole, normalizeJudgeLevel, normalizeJudgeRole } from "@/lib/roles";
 import {
+  DELETE_RELEASE_MUTATION,
   GET_ALL_USERS_QUERY,
+  GET_RELEASES_QUERY,
   CREATE_USERS_MUTATION,
   UPDATE_USERS_MUTATION,
   CHANGE_ROLES_MUTATION,
   DELETE_USERS_MUTATION,
 } from "@/graphql/operations";
 import type { User } from "@/types/models";
-import type { UserRole, Gender } from "@/types/models";
+import type { Release, UserRole, Gender } from "@/types/models";
 
 const ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "JUDGE", "USER"];
 const GENDERS: Gender[] = ["MALE", "FEMALE"];
 const ROLE_FILTERS: Array<UserRole | "ALL"> = ["ALL", "ADMIN", "JUDGE", "USER"];
 const MIN_JUDGE_LEVEL = 1;
 const MAX_JUDGE_LEVEL = 10;
+const TAB_USERS = "users";
+const TAB_RELEASES = "releases";
 
 interface NewUserRow {
   id: string;
@@ -160,7 +169,14 @@ function GenderSelect({
 }
 
 export function UserManagementPage() {
+  const { openChangelog } = useAppStore();
+  const [activeTab, setActiveTab] = useState<typeof TAB_USERS | typeof TAB_RELEASES>(TAB_USERS);
+
   const { data, loading } = useQuery<{ allUsers: User[] }>(GET_ALL_USERS_QUERY);
+  const { data: releasesData, loading: releasesLoading } = useQuery<{ releases: Release[] }>(GET_RELEASES_QUERY, {
+    skip: activeTab !== TAB_RELEASES,
+  });
+
   const [createUsers, { loading: creating }] = useMutation(CREATE_USERS_MUTATION, {
     refetchQueries: [{ query: GET_ALL_USERS_QUERY }],
   });
@@ -172,6 +188,9 @@ export function UserManagementPage() {
   });
   const [deleteUsers, { loading: deleting }] = useMutation(DELETE_USERS_MUTATION, {
     refetchQueries: [{ query: GET_ALL_USERS_QUERY }],
+  });
+  const [deleteRelease, { loading: deletingRelease }] = useMutation(DELETE_RELEASE_MUTATION, {
+    refetchQueries: [{ query: GET_RELEASES_QUERY }],
   });
 
   const allUsers = data?.allUsers ?? [];
@@ -218,6 +237,9 @@ export function UserManagementPage() {
   const [editPhoneUser, setEditPhoneUser] = useState<User | null>(null);
   const [editPhoneValue, setEditPhoneValue] = useState("");
   const [deleteTargetIds, setDeleteTargetIds] = useState<string[] | null>(null);
+  const [releaseDrawerOpen, setReleaseDrawerOpen] = useState(false);
+  const [editingRelease, setEditingRelease] = useState<Release | null>(null);
+  const [deleteReleaseId, setDeleteReleaseId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
   const toggleSelect = (id: string) => {
@@ -422,6 +444,7 @@ export function UserManagementPage() {
   };
 
   const busy = creating || updating || changingRoles || deleting;
+  const releases = releasesData?.releases ?? [];
 
   if (loading) {
     return (
@@ -433,9 +456,8 @@ export function UserManagementPage() {
 
   return (
     <div className="mx-auto max-w-4xl animate-fade-in px-4 py-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-2xl font-black text-slate-800">{t("user_management.title")}</h1>
-        <p className="text-sm text-slate-600">{t("user_management.desc")}</p>
+      <div className="mb-6">
+        <h1 className="mb-2 text-2xl font-black text-slate-800">{t("super_admin.panel_title")}</h1>
       </div>
 
       {message
@@ -460,6 +482,33 @@ export function UserManagementPage() {
           )
         : null}
 
+      <div className="mb-6 flex gap-2 border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab(TAB_USERS)}
+          className={`rounded-t-xl px-4 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === TAB_USERS
+              ? "border-b-2 border-primary-500 -mb-px bg-primary-100 text-primary-700"
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+          }`}
+        >
+          👤 {t("super_admin.tab_users")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab(TAB_RELEASES)}
+          className={`rounded-t-xl px-4 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === TAB_RELEASES
+              ? "border-b-2 border-primary-500 -mb-px bg-primary-100 text-primary-700"
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+          }`}
+        >
+          🚀 {t("super_admin.tab_releases")}
+        </button>
+      </div>
+
+      {activeTab === TAB_USERS ? (
+        <>
       <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-[200px]">
@@ -638,6 +687,103 @@ export function UserManagementPage() {
           </div>
         )}
       </div>
+        </>
+      ) : (
+        <>
+          <div className="mb-6 flex justify-start">
+            <button
+              type="button"
+              onClick={() => {
+                setEditingRelease(null);
+                setReleaseDrawerOpen(true);
+              }}
+              className="flex items-center justify-center gap-2 rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600"
+            >
+              <Plus className="h-4 w-4" />
+              {t("super_admin.add_release")}
+            </button>
+          </div>
+
+          {releasesLoading ? (
+            <div className="flex min-h-[200px] items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+              {releases.length === 0 ? (
+                <div className="p-12 text-center text-slate-500">
+                  <Rocket className="mx-auto mb-4 h-14 w-14 text-slate-300" />
+                  <p className="text-base font-medium">نسخه‌ای ثبت نشده است</p>
+                  <p className="mt-2 text-sm">اولین نسخه را ثبت کنید</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/80">
+                        <th className="p-4 text-xs font-semibold text-slate-500">شماره نسخه</th>
+                        <th className="p-4 text-xs font-semibold text-slate-500">تاریخ ثبت</th>
+                        <th className="p-4 text-xs font-semibold text-slate-500">وضعیت</th>
+                        <th className="p-4 text-xs font-semibold text-slate-500" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {releases.map((release) => (
+                        <tr key={release.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                          <td className="p-4 text-right font-medium text-slate-700">
+                            {t("changelog.version_prefix")} {toPersianDigits(release.version)}
+                          </td>
+                          <td className="p-4 text-sm text-slate-500">{formatDateFa(release.createdAt)}</td>
+                          <td className="p-4">
+                            <span
+                              className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-medium ${
+                                release.published ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {release.published ? t("super_admin.status_published") : t("super_admin.status_draft")}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => openChangelog(release)}
+                                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
+                                title={t("super_admin.view")}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingRelease(release);
+                                  setReleaseDrawerOpen(true);
+                                }}
+                                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
+                                title={t("common.edit")}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteReleaseId(release.id)}
+                                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                title={t("user_management.delete")}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
 
       <Dialog
         open={addModalOpen}
@@ -862,6 +1008,66 @@ export function UserManagementPage() {
                     {t("user_management.cancel")}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      <ReleaseDrawer
+        open={releaseDrawerOpen}
+        onClose={() => {
+          setReleaseDrawerOpen(false);
+          setEditingRelease(null);
+        }}
+        editingRelease={editingRelease}
+        onSuccess={() => setMessage({ type: "success", text: t("user_management.success") })}
+      />
+
+      {deleteReleaseId &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(15, 23, 42, 0.5)", backdropFilter: "blur(4px)" }}
+            dir="rtl"
+            onMouseDown={(e) => {
+              if (!deletingRelease && e.target === e.currentTarget) setDeleteReleaseId(null);
+            }}
+          >
+            <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl p-6">
+              <h4 className="mb-3 text-center text-lg font-bold text-slate-800">
+                {t("super_admin.release_delete_confirm_title")}
+              </h4>
+              <p className="mb-6 text-center text-sm leading-relaxed text-slate-600">
+                {t("super_admin.release_delete_confirm")}
+              </p>
+              <div className="flex flex-row-reverse gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await deleteRelease({ variables: { id: deleteReleaseId } });
+                      setMessage({ type: "success", text: t("user_management.success") });
+                      setTimeout(() => setMessage(null), 3000);
+                    } catch {
+                      setMessage({ type: "error", text: t("user_management.error") });
+                    }
+                    setDeleteReleaseId(null);
+                  }}
+                  disabled={deletingRelease}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-500 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-70"
+                >
+                  {deletingRelease ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {deletingRelease ? t("common.loading") : t("user_management.delete_action")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteReleaseId(null)}
+                  disabled={deletingRelease}
+                  className="flex flex-1 items-center justify-center rounded-xl bg-slate-100 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-200"
+                >
+                  {t("common.cancel")}
+                </button>
               </div>
             </div>
           </div>,

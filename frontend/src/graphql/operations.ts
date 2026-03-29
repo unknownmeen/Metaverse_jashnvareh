@@ -75,6 +75,7 @@ export const COMMENT_FRAGMENT = gql`
     ratingMaxScore
     imageId
     userId
+    parentCommentId
     createdAt
     author {
       ...UserFields
@@ -174,6 +175,82 @@ export const CHANGE_ROLES_MUTATION = gql`
 export const DELETE_USERS_MUTATION = gql`
   mutation DeleteUsers($ids: [String!]!) {
     deleteUsers(ids: $ids)
+  }
+`;
+
+// ─── Release / Changelog ────────────────────────────────────
+
+export const RELEASE_FRAGMENT = gql`
+  fragment ReleaseFields on Release {
+    id
+    version
+    published
+    publishedAt
+    features
+    improvements
+    bugFixes
+    createdAt
+    updatedAt
+  }
+`;
+
+export const GET_RELEASES_QUERY = gql`
+  query Releases {
+    releases {
+      ...ReleaseFields
+    }
+  }
+  ${RELEASE_FRAGMENT}
+`;
+
+export const GET_PUBLISHED_RELEASES_QUERY = gql`
+  query PublishedReleases {
+    publishedReleases {
+      ...ReleaseFields
+    }
+  }
+  ${RELEASE_FRAGMENT}
+`;
+
+export const GET_LATEST_PUBLISHED_RELEASE_QUERY = gql`
+  query LatestPublishedRelease {
+    latestPublishedRelease {
+      ...ReleaseFields
+    }
+  }
+  ${RELEASE_FRAGMENT}
+`;
+
+export const GET_RELEASE_QUERY = gql`
+  query Release($version: String!) {
+    release(version: $version) {
+      ...ReleaseFields
+    }
+  }
+  ${RELEASE_FRAGMENT}
+`;
+
+export const CREATE_RELEASE_MUTATION = gql`
+  mutation CreateRelease($input: CreateReleaseInput!) {
+    createRelease(input: $input) {
+      ...ReleaseFields
+    }
+  }
+  ${RELEASE_FRAGMENT}
+`;
+
+export const UPDATE_RELEASE_MUTATION = gql`
+  mutation UpdateRelease($id: String!, $input: UpdateReleaseInput!) {
+    updateRelease(id: $id, input: $input) {
+      ...ReleaseFields
+    }
+  }
+  ${RELEASE_FRAGMENT}
+`;
+
+export const DELETE_RELEASE_MUTATION = gql`
+  mutation DeleteRelease($id: String!) {
+    deleteRelease(id: $id)
   }
 `;
 
@@ -314,6 +391,15 @@ export const ADD_COMMENT_MUTATION = gql`
   ${COMMENT_FRAGMENT}
 `;
 
+export const ADD_OWNER_REPLY_MUTATION = gql`
+  mutation AddOwnerReply($input: ReplyToCommentInput!) {
+    addOwnerReply(input: $input) {
+      ...CommentFields
+    }
+  }
+  ${COMMENT_FRAGMENT}
+`;
+
 export const ADD_ADMIN_REVIEW_MUTATION = gql`
   mutation AddAdminReview($input: AddCommentInput!) {
     addAdminReview(input: $input) {
@@ -326,6 +412,15 @@ export const ADD_ADMIN_REVIEW_MUTATION = gql`
 export const ADD_JUDGE_REVIEW_MUTATION = gql`
   mutation AddJudgeReview($input: AddCommentInput!) {
     addJudgeReview(input: $input) {
+      ...CommentFields
+    }
+  }
+  ${COMMENT_FRAGMENT}
+`;
+
+export const UPDATE_COMMENT_MUTATION = gql`
+  mutation UpdateComment($input: UpdateCommentInput!) {
+    updateComment(input: $input) {
       ...CommentFields
     }
   }

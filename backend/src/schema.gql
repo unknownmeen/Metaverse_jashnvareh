@@ -30,6 +30,7 @@ type Comment {
   imageId: String!
   isAdminReview: Boolean!
   isJudgeReview: Boolean!
+  parentCommentId: ID
   ratingMaxScore: Int
   ratingScore: Int
   text: String!
@@ -49,6 +50,14 @@ input CreateFestivalInput {
   name: String!
   rulesText: String
   status: String = "UNOPENED"
+}
+
+input CreateReleaseInput {
+  bugFixes: [String!] = []
+  features: [String!] = []
+  improvements: [String!] = []
+  published: Boolean = false
+  version: String!
 }
 
 input CreateUserInput {
@@ -122,12 +131,15 @@ type Mutation {
   addAdminReview(input: AddCommentInput!): Comment!
   addComment(input: AddCommentInput!): Comment!
   addJudgeReview(input: AddCommentInput!): Comment!
+  addOwnerReply(input: ReplyToCommentInput!): Comment!
   changeRoles(changes: [ChangeRoleInput!]!): [User!]!
   createFestival(input: CreateFestivalInput!): Festival!
+  createRelease(input: CreateReleaseInput!): Release!
   createUsers(inputs: [CreateUserInput!]!): [User!]!
   deleteComment(commentId: ID!): Comment!
   deleteFestival(festivalId: ID!): Boolean!
   deleteImage(imageId: ID!): Image!
+  deleteRelease(id: String!): Boolean!
   deleteUsers(ids: [String!]!): Boolean!
   login(input: LoginInput!): AuthPayload!
 
@@ -136,10 +148,12 @@ type Mutation {
   markNotificationAsRead(id: ID!): Notification!
   rateImage(input: RateImageInput!): Rating!
   toggleTopImage(imageId: ID!): Image!
+  updateComment(input: UpdateCommentInput!): Comment!
   updateFestival(input: UpdateFestivalInput!): Festival!
   updateFestivalStatus(input: UpdateFestivalStatusInput!): Festival!
   updateImage(input: UpdateImageInput!): Image!
   updateProfile(input: UpdateProfileInput!): User!
+  updateRelease(id: String!, input: UpdateReleaseInput!): Release
   updateUsers(updates: [UpdateUserByIdInput!]!): [User!]!
   uploadImage(input: UploadImageInput!): Image!
 }
@@ -173,9 +187,13 @@ type Query {
   image(idOrSlug: String!): Image!
   imageAverageRating(imageId: ID!): AverageRating!
   imageComments(imageId: ID!): [Comment!]!
+  latestPublishedRelease: Release
   me: User!
   myImages: [Image!]!
   myNotifications: [Notification!]!
+  publishedReleases: [Release!]!
+  release(version: String!): Release
+  releases: [Release!]!
 }
 
 input RateImageInput {
@@ -192,6 +210,24 @@ type Rating {
   userId: String!
 }
 
+type Release {
+  bugFixes: [String!]!
+  createdAt: DateTime!
+  features: [String!]!
+  id: ID!
+  improvements: [String!]!
+  published: Boolean!
+  publishedAt: DateTime
+  updatedAt: DateTime!
+  version: String!
+}
+
+input ReplyToCommentInput {
+  imageId: ID!
+  parentCommentId: ID!
+  text: String!
+}
+
 enum Role {
   ADMIN
   JUDGE
@@ -200,6 +236,11 @@ enum Role {
   JUDGE_LEVEL_3
   SUPER_ADMIN
   USER
+}
+
+input UpdateCommentInput {
+  commentId: ID!
+  text: String!
 }
 
 input UpdateFestivalInput {
@@ -232,6 +273,14 @@ input UpdateProfileInput {
   displayName: String
   newPassword: String
   realName: String
+}
+
+input UpdateReleaseInput {
+  bugFixes: [String!]
+  features: [String!]
+  improvements: [String!]
+  published: Boolean
+  version: String
 }
 
 input UpdateUserByIdInput {

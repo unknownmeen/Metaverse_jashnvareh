@@ -56,6 +56,24 @@ export class NotificationListener {
   }
 
   /**
+   * When the image owner replies to a comment, notify the original commenter.
+   */
+  @OnEvent('OWNER_REPLY_ADDED')
+  async handleOwnerReplyAdded(payload: {
+    imageId: string;
+    parentAuthorId: string;
+    replierId: string;
+  }) {
+    await this.notificationRepository.create({
+      type: NotificationType.COMMENT,
+      text: `صاحب اثر به نظر شما پاسخ داد.`,
+      userId: payload.parentAuthorId,
+      senderId: payload.replierId,
+      imageId: payload.imageId,
+    });
+  }
+
+  /**
    * When a user rates an image, notify the owner.
    */
   @OnEvent('RATING_ADDED')

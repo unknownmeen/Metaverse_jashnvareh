@@ -6,6 +6,8 @@ import { UserModel } from '../../users/models/user.model';
 import { CommentReadService } from '../services/comment-read.service';
 import { CommentWriteService } from '../services/comment-write.service';
 import { AddCommentInput } from '../dto/add-comment.input';
+import { ReplyToCommentInput } from '../dto/reply-to-comment.input';
+import { UpdateCommentInput } from '../dto/update-comment.input';
 import { GqlAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { UserReadService } from '../../users/services/user-read.service';
@@ -33,6 +35,15 @@ export class CommentResolver {
     return this.commentWriteService.addComment(user, input);
   }
 
+  @Mutation(() => CommentModel)
+  @UseGuards(GqlAuthGuard)
+  async addOwnerReply(
+    @CurrentUser() user: User,
+    @Args('input') input: ReplyToCommentInput,
+  ) {
+    return this.commentWriteService.addOwnerReply(user, input);
+  }
+
   /**
    * Admin-only pinned review comment.
    */
@@ -56,9 +67,17 @@ export class CommentResolver {
     return this.commentWriteService.addJudgeReview(user, input);
   }
 
+  @Mutation(() => CommentModel)
+  @UseGuards(GqlAuthGuard)
+  async updateComment(
+    @CurrentUser() user: User,
+    @Args('input') input: UpdateCommentInput,
+  ) {
+    return this.commentWriteService.updateComment(user, input);
+  }
+
   @Mutation(() => CommentModel, { name: 'deleteComment' })
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(GqlAuthGuard)
   async deleteComment(
     @CurrentUser() user: User,
     @Args('commentId', { type: () => ID }) commentId: string,

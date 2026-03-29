@@ -22,6 +22,9 @@ export class CommentModel {
   @Field()
   userId: string;
 
+  @Field(() => ID, { nullable: true })
+  parentCommentId?: string | null;
+
   @Field(() => UserModel)
   author: UserModel;
 

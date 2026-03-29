@@ -30,7 +30,7 @@ export class ImageWriteService {
 
     if (festival.status !== FestivalStatus.OPEN) {
       throw new BadRequestException(
-        'ارسال تصویر فقط در وضعیت «باز» جشنواره امکان‌پذیر است',
+        'ارسال تصویر فقط وقتی جشنواره «در حال برگزاری» است امکان‌پذیر است',
       );
     }
 

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@apollo/client/react";
 import { GET_ME_QUERY, LOGIN_MUTATION } from "@/graphql/operations";
 import { apolloClient } from "@/graphql/apollo-client";
 import type { User } from "@/types/models";
+import type { Release } from "@/types/models";
 
 // ─── Auth Token helpers ──────────────────────────────────────
 
@@ -26,8 +27,12 @@ function clearStoredToken() {
 interface AppStoreValue {
   currentUser: User | null;
   loading: boolean;
+  showChangelogModal: boolean;
+  changelogInitialRelease: Release | null;
   login: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
+  openChangelog: (release?: Release | null) => void;
+  closeChangelog: () => void;
 }
 
 const AppStoreContext = createContext<AppStoreValue | undefined>(undefined);
@@ -37,6 +42,8 @@ const AppStoreContext = createContext<AppStoreValue | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(!!getStoredToken());
+  const [showChangelogModal, setShowChangelogModal] = useState(false);
+  const [changelogInitialRelease, setChangelogInitialRelease] = useState<Release | null>(null);
   const authResolvedRef = useRef(false);
 
   // Fetch user on mount if token exists
@@ -98,14 +105,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     clearStoredToken();
     setCurrentUser(null);
+    setShowChangelogModal(false);
+    setChangelogInitialRelease(null);
     apolloClient.clearStore();
+  }, []);
+
+  const openChangelog = useCallback((release?: Release | null) => {
+    setChangelogInitialRelease(release ?? null);
+    setShowChangelogModal(true);
+  }, []);
+
+  const closeChangelog = useCallback(() => {
+    setShowChangelogModal(false);
+    setChangelogInitialRelease(null);
   }, []);
 
   const loading = initializing || meLoading;
 
   const value: AppStoreValue = useMemo(
-    () => ({ currentUser, loading, login, logout }),
-    [currentUser, loading, login, logout],
+    () => ({
+      currentUser,
+      loading,
+      showChangelogModal,
+      changelogInitialRelease,
+      login,
+      logout,
+      openChangelog,
+      closeChangelog,
+    }),
+    [
+      changelogInitialRelease,
+      closeChangelog,
+      currentUser,
+      loading,
+      login,
+      logout,
+      openChangelog,
+      showChangelogModal,
+    ],
   );
 
   return <AppStoreContext.Provider value={value}>{children}</AppStoreContext.Provider>;
