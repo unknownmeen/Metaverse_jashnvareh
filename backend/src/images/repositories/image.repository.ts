@@ -39,6 +39,13 @@ export class ImageRepository {
     return this.prisma.image.create({ data });
   }
 
+  async update(id: string, data: Prisma.ImageUpdateInput): Promise<Image> {
+    return this.prisma.image.update({
+      where: { id },
+      data,
+    });
+  }
+
   async toggleTopImage(id: string, isTopImage: boolean): Promise<Image> {
     return this.prisma.image.update({
       where: { id },

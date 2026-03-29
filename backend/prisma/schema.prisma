@@ -105,6 +105,7 @@ model Image {
   url        String
   galleryUrls String[] @default([])
   title      String?
+  description String?
   isTopImage Boolean @default(false)
   tags       String[] @default([])
 

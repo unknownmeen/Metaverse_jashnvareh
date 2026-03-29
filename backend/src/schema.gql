@@ -98,6 +98,7 @@ type Image {
   averageRating: Float
   commentCount: Int!
   createdAt: DateTime!
+  description: String
   festival: Festival
   festivalId: String!
   galleryUrls: [String!]!
@@ -137,6 +138,7 @@ type Mutation {
   toggleTopImage(imageId: ID!): Image!
   updateFestival(input: UpdateFestivalInput!): Festival!
   updateFestivalStatus(input: UpdateFestivalStatusInput!): Festival!
+  updateImage(input: UpdateImageInput!): Image!
   updateProfile(input: UpdateProfileInput!): User!
   updateUsers(updates: [UpdateUserByIdInput!]!): [User!]!
   uploadImage(input: UploadImageInput!): Image!
@@ -215,6 +217,15 @@ input UpdateFestivalStatusInput {
   newStatus: FestivalStatus!
 }
 
+input UpdateImageInput {
+  coverIndex: Int! = 0
+  description: String
+  imageId: ID!
+  tags: [String!] = []
+  title: String
+  urls: [String!]!
+}
+
 input UpdateProfileInput {
   avatarUrl: String
   currentPassword: String
@@ -236,6 +247,7 @@ input UpdateUserInput {
 
 input UploadImageInput {
   coverIndex: Int! = 0
+  description: String
   festivalId: ID!
   tags: [String!] = []
   title: String

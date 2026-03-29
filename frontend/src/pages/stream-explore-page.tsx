@@ -110,11 +110,11 @@ export function StreamExplorePage() {
 
   const canUpload = festival.status === "OPEN" && !isJudgeRole(currentUser.role);
 
-  const handleUploadComplete = async (urls: string[], title: string, _description: string, coverIndex: number) => {
+  const handleUploadComplete = async (urls: string[], title: string, description: string, coverIndex: number) => {
     setUploadError("");
     try {
       const { data } = await uploadImage({
-        variables: { input: { festivalId: festival.id, urls, title, coverIndex } },
+        variables: { input: { festivalId: festival.id, urls, title, description, coverIndex } },
         refetchQueries: [{ query: GET_FESTIVAL_IMAGES_QUERY, variables: { festivalId: festival.id } }],
         awaitRefetchQueries: true,
       });

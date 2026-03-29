@@ -1,12 +1,21 @@
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
-import { ArrayMaxSize, ArrayNotEmpty, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayNotEmpty,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 @InputType()
-export class UploadImageInput {
+export class UpdateImageInput {
   @Field(() => ID)
   @IsNotEmpty()
   @IsString()
-  festivalId: string;
+  imageId: string;
 
   @Field(() => [String])
   @ArrayNotEmpty()

@@ -42,6 +42,7 @@ export const IMAGE_FRAGMENT = gql`
     url
     galleryUrls
     title
+    description
     isTopImage
     tags
     festivalId
@@ -261,6 +262,15 @@ export const GET_IMAGE_QUERY = gql`
 export const UPLOAD_IMAGE_MUTATION = gql`
   mutation UploadImage($input: UploadImageInput!) {
     uploadImage(input: $input) {
+      ...ImageFields
+    }
+  }
+  ${IMAGE_FRAGMENT}
+`;
+
+export const UPDATE_IMAGE_MUTATION = gql`
+  mutation UpdateImage($input: UpdateImageInput!) {
+    updateImage(input: $input) {
       ...ImageFields
     }
   }

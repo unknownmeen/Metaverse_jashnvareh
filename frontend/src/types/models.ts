@@ -50,6 +50,7 @@ export interface ImageItem {
   url: string;
   galleryUrls: string[];
   title?: string | null;
+  description?: string | null;
   isTopImage: boolean;
   tags: string[];
   festivalId: string;

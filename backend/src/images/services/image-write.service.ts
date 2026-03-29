@@ -1,12 +1,13 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { FestivalStatus, Image } from '@prisma/client';
+import { FestivalStatus, Image, Role } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { ImageRepository } from '../repositories/image.repository';
 import { FestivalRepository } from '../../festivals/repositories/festival.repository';
 import { UploadImageInput } from '../dto/upload-image.input';
+import { UpdateImageInput } from '../dto/update-image.input';
 import { ImageTopSelectedEvent } from '../events/image-top-selected.event';
 
 @Injectable()
@@ -42,6 +43,7 @@ export class ImageWriteService {
       url: coverUrl,
       galleryUrls: urls,
       title: input.title,
+      description: input.description,
       tags: input.tags ?? [],
       festival: { connect: { id: input.festivalId } },
       user: { connect: { id: userId } },
@@ -119,10 +121,39 @@ export class ImageWriteService {
     return updatedImage;
   }
 
-  async deleteImage(imageId: string): Promise<Image> {
+  async updateImage(userId: string, role: Role, input: UpdateImageInput): Promise<Image> {
+    const image = await this.imageRepository.findById(input.imageId);
+    if (!image) {
+      throw new NotFoundException('تصویر یافت نشد');
+    }
+    if (!this.canManageImage(userId, role, image.userId)) {
+      throw new ForbiddenException('فقط صاحب اثر می‌تواند تصویر خودش را ویرایش کند');
+    }
+
+    const urls = this.normalizeUrls(input.urls);
+    const safeCoverIndex = Math.min(input.coverIndex ?? 0, urls.length - 1);
+    const coverUrl = urls[safeCoverIndex];
+    const updatedImage = await this.imageRepository.update(input.imageId, {
+      url: coverUrl,
+      galleryUrls: urls,
+      title: input.title,
+      description: input.description,
+      tags: input.tags ?? [],
+    });
+
+    const removedUrls = (image.galleryUrls ?? []).filter((url) => !urls.includes(url));
+    await Promise.allSettled(removedUrls.map((url) => this.removeUploadedFile(url)));
+
+    return updatedImage;
+  }
+
+  async deleteImage(userId: string, role: Role, imageId: string): Promise<Image> {
     const image = await this.imageRepository.findById(imageId);
     if (!image) {
       throw new NotFoundException('تصویر یافت نشد');
+    }
+    if (!this.canManageImage(userId, role, image.userId)) {
+      throw new ForbiddenException('فقط صاحب اثر می‌تواند تصویر خودش را حذف کند');
     }
 
     const deletedImage = await this.imageRepository.delete(imageId);
@@ -132,6 +163,13 @@ export class ImageWriteService {
       ),
     );
     return deletedImage;
+  }
+
+  private canManageImage(userId: string, role: Role, ownerId: string): boolean {
+    if (ownerId === userId) {
+      return true;
+    }
+    return role === Role.ADMIN || role === Role.SUPER_ADMIN;
   }
 
   private async removeUploadedFile(url: string | null | undefined): Promise<void> {

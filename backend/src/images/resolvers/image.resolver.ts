@@ -21,6 +21,7 @@ import { RatingReadService } from '../../ratings/services/rating-read.service';
 import { UserReadService } from '../../users/services/user-read.service';
 import { FestivalReadService } from '../../festivals/services/festival-read.service';
 import { UploadImageInput } from '../dto/upload-image.input';
+import { UpdateImageInput } from '../dto/update-image.input';
 import { GqlAuthGuard, RolesGuard } from '../../common/guards';
 import { CurrentUser, Roles } from '../../common/decorators';
 import { canSeeJudgeSignals } from '../../common/utils/role.util';
@@ -69,11 +70,22 @@ export class ImageResolver {
     return this.imageWriteService.toggleTopImage(user.id, imageId);
   }
 
+  @Mutation(() => ImageModel)
+  @UseGuards(GqlAuthGuard)
+  async updateImage(
+    @CurrentUser() user: User,
+    @Args('input') input: UpdateImageInput,
+  ) {
+    return this.imageWriteService.updateImage(user.id, user.role, input);
+  }
+
   @Mutation(() => ImageModel, { name: 'deleteImage' })
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  async deleteImage(@Args('imageId', { type: () => ID }) imageId: string) {
-    return this.imageWriteService.deleteImage(imageId);
+  @UseGuards(GqlAuthGuard)
+  async deleteImage(
+    @CurrentUser() user: User,
+    @Args('imageId', { type: () => ID }) imageId: string,
+  ) {
+    return this.imageWriteService.deleteImage(user.id, user.role, imageId);
   }
 
   /**
