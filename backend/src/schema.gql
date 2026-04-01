@@ -240,6 +240,7 @@ enum Role {
 
 input UpdateCommentInput {
   commentId: ID!
+  ratingScore: Int
   text: String!
 }
 

@@ -140,6 +140,7 @@
     "delete_comment_error": "خطا در حذف نظر",
     "comment_edit_error": "خطا در ذخیره نظر",
     "comment_edit_validation": "متن نظر باید حداقل ۵ کاراکتر باشد.",
+    "comment_edit_rating_validation": "امتیاز ستاره را انتخاب کنید.",
     "admin_featured": "منتخب جشنواره",
     "owner": "صاحب اثر",
     "unknown": "نامشخص",
@@ -207,7 +208,7 @@
     "delete_error": "خطا در حذف تصویر"
   },
   "stream_status": {
-    "open": "در حال برگزاری",
+    "open": "در حال برگذاری",
     "closed": "برگزار شده",
     "unopened": "قبل از برگزاری"
   },

@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "@apollo/client/react";
 
 import { useAppStore } from "@/app/store";
 import { Alert } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageCard } from "@/features/streams/image-card";
@@ -146,10 +146,6 @@ export function StreamExplorePage() {
               <StreamStatusBadge status={festival.status} />
             </div>
 
-            {festival.conceptText?.trim() ? (
-              <CardDescription className="text-justify">{festival.conceptText}</CardDescription>
-            ) : null}
-
             {festival.conceptMediaUrl ? (
               <>
                 <div className="relative overflow-hidden rounded-2xl border border-border bg-primary-50">
@@ -211,7 +207,6 @@ export function StreamExplorePage() {
       <Card className="border-white/70" data-section="featured" data-festival-id={festival.id}>
         <CardHeader>
           <CardTitle>{t("stream_explore.featured_gallery")}</CardTitle>
-          <CardDescription>{t("stream_explore.featured_desc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {featuredImages.length === 0 ? (
@@ -231,7 +226,6 @@ export function StreamExplorePage() {
         <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle>{t("stream_explore.explore_all")}</CardTitle>
-            <CardDescription>{t("stream_explore.images_in_stream", { count: streamImages.length })}</CardDescription>
           </div>
 
           <Select onValueChange={(value) => setFilter(value as typeof filter)} value={filter}>

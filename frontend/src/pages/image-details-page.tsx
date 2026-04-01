@@ -54,6 +54,7 @@ export function ImageDetailsPage() {
   const [deleteCommentError, setDeleteCommentError] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
+  const [editCommentRating, setEditCommentRating] = useState(0);
   const [editCommentError, setEditCommentError] = useState("");
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -165,7 +166,8 @@ export function ImageDetailsPage() {
   const judgeAverageRating = image.judgeAverageRating ?? 0;
   const submittingComment = commenting || adminReviewing || judgeReviewing;
   const isPlatformAdmin = currentUser.role === "ADMIN" || currentUser.role === "SUPER_ADMIN";
-  const canModifyComment = (c: Comment) => isPlatformAdmin || c.userId === currentUser.id;
+  const canEditComment = (c: Comment) => c.userId === currentUser.id;
+  const canDeleteComment = (c: Comment) => isPlatformAdmin || c.userId === currentUser.id;
   const getRoleLabel = (role?: Comment["author"]["role"]) => (role ? t(`role.${role.toLowerCase()}`) : "");
   const glassControlClassName =
     "absolute z-10 flex items-center justify-center gap-1.5 rounded-full border border-white/90 bg-white/99 px-3 py-2 text-sm font-semibold text-slate-600 shadow-[0_16px_40px_rgba(15,23,42,0.16)] ring-1 ring-white/45 backdrop-blur-xl transition-all duration-200 hover:border-white hover:bg-white hover:text-primary-700 hover:shadow-[0_18px_42px_rgba(15,23,42,0.2)]";
@@ -249,6 +251,7 @@ export function ImageDetailsPage() {
       if (editingCommentId === deleteCommentId) {
         setEditingCommentId(null);
         setEditCommentText("");
+        setEditCommentRating(0);
         setEditCommentError("");
       }
     } catch {
@@ -259,12 +262,16 @@ export function ImageDetailsPage() {
   const startEditComment = (c: Comment) => {
     setEditingCommentId(c.id);
     setEditCommentText(c.text);
+    setEditCommentRating(
+      c.ratingMaxScore != null && c.ratingScore != null ? c.ratingScore : 0,
+    );
     setEditCommentError("");
   };
 
   const cancelEditComment = () => {
     setEditingCommentId(null);
     setEditCommentText("");
+    setEditCommentRating(0);
     setEditCommentError("");
   };
 
@@ -275,10 +282,22 @@ export function ImageDetailsPage() {
       setEditCommentError(t("image_details.comment_edit_validation"));
       return;
     }
+    const editingComment = commentsData?.imageComments?.find((c) => c.id === editingCommentId);
+    const canEditRating = editingComment?.ratingMaxScore != null;
+    if (canEditRating && editCommentRating < 1) {
+      setEditCommentError(t("image_details.comment_edit_rating_validation"));
+      return;
+    }
     setEditCommentError("");
     try {
       await updateCommentMutation({
-        variables: { input: { commentId: editingCommentId, text: trimmed } },
+        variables: {
+          input: {
+            commentId: editingCommentId,
+            text: trimmed,
+            ...(canEditRating ? { ratingScore: editCommentRating } : {}),
+          },
+        },
         refetchQueries: refetchAfterCommentChange,
         awaitRefetchQueries: true,
       });
@@ -318,7 +337,9 @@ export function ImageDetailsPage() {
     const isAdminStyle = isAdminStyleComment(comment);
     const isJudgeStyle = canSeeJudgeSignals && isJudgeStyleComment(comment);
     const hasRating = Boolean(comment.ratingScore && comment.ratingMaxScore);
-    const showCommentActions = canModifyComment(comment);
+    const showEditActions = canEditComment(comment);
+    const showDeleteAction = canDeleteComment(comment);
+    const showCommentActions = showEditActions || showDeleteAction;
     const commentControlsPadding = hasRating ? "sm:pl-24" : showCommentActions ? "sm:pl-20" : "";
     const isEditing = editingCommentId === comment.id;
     const isOwnerReply = Boolean(comment.parentCommentId) && comment.userId === image.userId;
@@ -337,7 +358,7 @@ export function ImageDetailsPage() {
         } ${isAdminStyle ? "border-amber-200 bg-amber-50/70" : nested ? "" : "border-border bg-white"}`}
       >
         {hasRating ? (
-          <div className="mb-2 sm:absolute sm:left-3 sm:top-3 sm:mb-0">
+          <div className="mb-2 sm:absolute sm:left-3 sm:top-3 sm:mb-0 sm:z-[2]">
             <div
               className={`inline-flex rounded-full px-1.5 py-0.5 shadow-sm sm:px-2 sm:py-1 ${
                 isJudgeStyle ? "bg-violet-50" : "bg-amber-50"
@@ -346,9 +367,10 @@ export function ImageDetailsPage() {
               <StarRating
                 color={isJudgeStyle ? "purple" : "amber"}
                 max={comment.ratingMaxScore!}
-                readonly
+                onChange={isEditing ? setEditCommentRating : undefined}
+                readonly={!isEditing}
                 size="sm"
-                value={comment.ratingScore!}
+                value={isEditing ? editCommentRating : comment.ratingScore!}
               />
             </div>
           </div>
@@ -359,25 +381,29 @@ export function ImageDetailsPage() {
               hasRating ? "top-12" : "top-3"
             }`}
           >
-            <button
-              type="button"
-              onClick={() => startEditComment(comment)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/92 text-slate-400 shadow-sm transition-all hover:bg-primary-50 hover:text-primary-600"
-              title={t("image_details.edit_comment")}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteCommentError("");
-                setDeleteCommentId(comment.id);
-              }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/92 text-slate-400 shadow-sm transition-all hover:bg-red-50 hover:text-red-600"
-              title={t("image_details.delete_comment")}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            {showEditActions ? (
+              <button
+                type="button"
+                onClick={() => startEditComment(comment)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/92 text-slate-400 shadow-sm transition-all hover:bg-primary-50 hover:text-primary-600"
+                title={t("image_details.edit_comment")}
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            ) : null}
+            {showDeleteAction ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteCommentError("");
+                  setDeleteCommentId(comment.id);
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/92 text-slate-400 shadow-sm transition-all hover:bg-red-50 hover:text-red-600"
+                title={t("image_details.delete_comment")}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
         ) : null}
         <div className={`mb-2 flex items-center gap-2 ${commentControlsPadding}`}>
@@ -621,12 +647,15 @@ export function ImageDetailsPage() {
               </div>
             ) : (
               <form className="space-y-3" onSubmit={handleSubmit} noValidate>
-                <StarRating
-                  color={isJudgeUser ? "purple" : "amber"}
-                  max={isJudgeUser ? judgeMaxScore : 5}
-                  onChange={setRating}
-                  value={rating}
-                />
+                <div className="flex w-full justify-start">
+                  <StarRating
+                    className="shrink-0"
+                    color={isJudgeUser ? "purple" : "amber"}
+                    max={isJudgeUser ? judgeMaxScore : 5}
+                    onChange={setRating}
+                    value={rating}
+                  />
+                </div>
                 <Textarea
                   onChange={(event) => setText(event.target.value)}
                   placeholder={t("image_details.comment_placeholder")}

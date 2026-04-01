@@ -1,4 +1,4 @@
-﻿import { Star } from "lucide-react";
+import { Star } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ interface StarRatingProps {
   size?: "sm" | "md";
   max?: number;
   color?: "amber" | "purple";
+  className?: string;
 }
 
 export function StarRating({
@@ -18,6 +19,7 @@ export function StarRating({
   size = "md",
   max = 5,
   color = "amber",
+  className,
 }: StarRatingProps) {
   const iconSize = size === "sm" ? "h-3.5 w-3.5 sm:h-4 sm:w-4" : "h-4 w-4 sm:h-5 sm:w-5";
   const buttonPadding = size === "sm" ? "p-0.5 sm:p-1" : "p-1";
@@ -25,7 +27,7 @@ export function StarRating({
   const activeColor = color === "purple" ? "text-violet-500" : "text-amber-500";
 
   return (
-    <div className="flex items-center gap-1">
+    <div className={cn("flex items-center gap-1", className)} dir="rtl">
       {Array.from({ length: max }, (_, index) => index + 1).map((item) => (
         <button
           className={cn(

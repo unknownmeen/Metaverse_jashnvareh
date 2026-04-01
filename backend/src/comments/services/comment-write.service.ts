@@ -172,14 +172,37 @@ export class CommentWriteService {
       throw new NotFoundException('پیام یافت نشد');
     }
 
-    const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
-    if (comment.userId !== user.id && !isAdmin) {
-      throw new ForbiddenException('فقط نویسنده یا دبیر می‌تواند این نظر را ویرایش کند');
+    if (comment.userId !== user.id) {
+      throw new ForbiddenException('فقط نویسنده می‌تواند این نظر را ویرایش کند');
     }
 
     const trimmed = input.text.trim();
     if (trimmed.length < 5) {
       throw new BadRequestException('متن نظر باید حداقل ۵ کاراکتر باشد');
+    }
+
+    const maxScore = comment.ratingMaxScore ?? 5;
+    const hadRating = comment.ratingMaxScore != null || comment.ratingScore != null;
+
+    if (input.ratingScore != null && input.ratingScore !== undefined) {
+      if (!hadRating) {
+        throw new BadRequestException('این نظر امتیازی ندارد');
+      }
+      if (input.ratingScore < 1 || input.ratingScore > maxScore) {
+        throw new BadRequestException(`امتیاز باید بین ۱ و ${maxScore} باشد`);
+      }
+      const category = comment.isJudgeReview ? RatingCategory.JUDGE : RatingCategory.USER;
+      await this.ratingRepository.upsert(
+        comment.imageId,
+        comment.userId,
+        input.ratingScore,
+        maxScore,
+        category,
+      );
+      return this.commentRepository.update(comment.id, {
+        text: trimmed,
+        ratingScore: input.ratingScore,
+      });
     }
 
     return this.commentRepository.update(comment.id, { text: trimmed });
@@ -191,9 +214,9 @@ export class CommentWriteService {
       throw new NotFoundException('پیام یافت نشد');
     }
 
-    const isAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
-    if (comment.userId !== user.id && !isAdmin) {
-      throw new ForbiddenException('فقط نویسنده یا دبیر می‌تواند این نظر را حذف کند');
+    const isPlatformAdmin = user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN;
+    if (comment.userId !== user.id && !isPlatformAdmin) {
+      throw new ForbiddenException('فقط نویسندهٔ این نظر یا مدیر می‌تواند آن را حذف کند');
     }
 
     return this.commentRepository.delete(commentId);

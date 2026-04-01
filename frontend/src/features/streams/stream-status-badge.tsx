@@ -13,14 +13,14 @@ export function StreamStatusBadge({ status, size = "md" }: { status: StreamStatu
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-semibold",
+        "inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full font-semibold",
         item.textColor,
         item.bgColor,
         size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs",
       )}
     >
-      <span className={cn("rounded-full", item.dotColor, size === "sm" ? "h-1.5 w-1.5" : "h-2 w-2")} />
-      {t(item.labelKey)}
+      <span className={cn("shrink-0 rounded-full", item.dotColor, size === "sm" ? "h-1.5 w-1.5" : "h-2 w-2")} />
+      <span className="min-w-0">{t(item.labelKey)}</span>
     </div>
   );
 }

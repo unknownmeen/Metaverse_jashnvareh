@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@apollo/client/react";
 
 import { Alert } from "@/components/ui/alert";
+import { StreamStatusBadge } from "@/features/streams/stream-status-badge";
 import { GET_FESTIVALS_QUERY } from "@/graphql/operations";
 import { formatNumberFa } from "@/lib/format";
 import { t } from "@/lib/i18n";
@@ -17,9 +18,8 @@ export function StreamsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
+      <div>
         <h2 className="text-2xl font-bold text-slate-800">{t("streams.list_title")}</h2>
-        <p className="text-sm text-muted-foreground">{t("streams.list_desc")}</p>
       </div>
 
       {loading ? (
@@ -54,11 +54,10 @@ export function StreamsPage() {
                 </div>
 
                 <div className="space-y-3 p-4">
-                  <h3 className="text-base font-bold text-slate-800 leading-relaxed">{festival.name}</h3>
-
-                  <p className="text-justify text-xs leading-5 text-muted-foreground line-clamp-2">
-                    {festival.conceptText || t("streams.images_in_stream", { count: festival.imageCount })}
-                  </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="min-w-0 flex-1 text-base font-bold leading-relaxed text-slate-800">{festival.name}</h3>
+                    <StreamStatusBadge size="sm" status={festival.status} />
+                  </div>
 
                   <div className="flex items-center gap-1 border-t border-slate-100 pt-3 text-sm font-semibold text-primary-500 transition-colors group-hover:text-primary-600">
                     {t("streams.view_info")}

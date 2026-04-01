@@ -50,7 +50,6 @@ export function AdminDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">{t("admin.dashboard_title")}</h2>
-          <p className="text-sm text-muted-foreground">{t("admin.dashboard_desc")}</p>
         </div>
 
         <Button asChild>

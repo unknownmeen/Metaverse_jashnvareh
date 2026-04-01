@@ -58,6 +58,8 @@ export class ImageRepository {
   }
 
   async countComments(imageId: string): Promise<number> {
-    return this.prisma.comment.count({ where: { imageId } });
+    return this.prisma.comment.count({
+      where: { imageId, parentCommentId: null },
+    });
   }
 }
