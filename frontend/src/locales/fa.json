@@ -179,6 +179,7 @@
     "upload_error": "خطا در ارسال تصویر. لطفاً دوباره تلاش کنید.",
     "not_found": "این جریان پیدا نشد.",
     "concept_alt": "کانسپت",
+    "concept_title": "توضیح مفهوم",
     "concept_empty": "تصویر یا ویدیو مفهوم ثبت نشده است.",
     "concept_fullscreen": "نمایش تمام‌صفحه",
     "rules_title": "قواعد فرم",

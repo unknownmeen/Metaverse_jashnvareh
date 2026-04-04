@@ -146,6 +146,13 @@ export function StreamExplorePage() {
               <StreamStatusBadge status={festival.status} />
             </div>
 
+            {festival.conceptText?.trim() ? (
+              <div className="rounded-2xl bg-slate-50/90 p-3 text-sm leading-6 text-muted-foreground">
+                <h3 className="mb-1 font-semibold text-slate-700">{t("stream_explore.concept_title")}</h3>
+                <p className="whitespace-pre-wrap text-justify">{festival.conceptText.trim()}</p>
+              </div>
+            ) : null}
+
             {festival.conceptMediaUrl ? (
               <>
                 <div className="relative overflow-hidden rounded-2xl border border-border bg-primary-50">
